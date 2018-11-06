@@ -12,7 +12,6 @@ struct testfw_t
 };
 
 /* ********** FRAMEWORK ********** */
-
 struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cmd, bool silent, bool verbose)
 {
     return NULL;
