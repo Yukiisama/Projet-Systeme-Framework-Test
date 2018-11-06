@@ -5,6 +5,8 @@
 
 #include "testfw.h"
 
+#define DEFAULT_SUITE_NAME "defaultSuiteName"
+#define DEFAULT_TEST_NAME  "defaultTestName"
 #define DEFAULT_NB_TESTS 30
 
 /* ********** STRUCTURES ********** */
@@ -92,7 +94,27 @@ struct test_t *testfw_get(struct testfw_t *fw, int k)
 
 struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name, testfw_func_t func)
 {
-    return NULL;
+   if (fw == NULL || fw->tests ==NULL){
+       perror("invalid struc");
+       exit(EXIT_FAILURE);
+   } 
+
+    if (suite == NULL)
+        suite = DEFAULT_SUITE_NAME;
+    if (name == NULL)
+        name = DEFAULT_TEST_NAME;
+    
+
+   if ( fw->nbTest >= fw->lenTests ){
+       fw->lenTests *= 2;
+       fw->tests = (struct test_t **) realloc(fw->tests,fw->lenTests);
+   }
+   fw->tests[fw->nbTest]->suite = suite;
+   fw->tests[fw->nbTest]->name = name;
+   fw->tests[fw->nbTest]->func = func;
+   fw->nbTest +=1;
+
+   return fw->tests[fw->nbTest-1];
 }
 
 struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name)
