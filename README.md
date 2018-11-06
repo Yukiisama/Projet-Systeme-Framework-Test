@@ -66,7 +66,7 @@ $ gcc hello.o -o hello -rdynamic -ltestfw_main -ltestfw -ldl -L.
 $ ./hello
 hello world
 [SUCCESS] run test "test.hello" in 0.52 ms (status 0, wstatus 0)
-=> 100% tests passed, 0 tests failed out of 1
+=> 0% tests passed, 1 tests failed out of 1
 ```
 
 And that's all!
@@ -176,9 +176,9 @@ $ ./sample -O -t 2 -m forkp
 Let's run a *single test* instead of a *test suite* as follow:
 
 ```bash
-$ ./sample -m forks -r test.failure -x
+$ ./sample -m fork -r test.failure -x
 [FAILURE] run test "test.failure" in 0.43 ms (status 1)
-=> 0% tests passed, 1 tests failed out of 1
+=> 100% tests passed, 0 tests failed out of 1
 $ echo $?
 0
 ```
@@ -190,7 +190,6 @@ Now, let's run a single test in *nofork* mode:
 ```bash
 $ ./sample -m nofork  -r test.failure -x
 [FAILURE] run test "test.failure" in 0.01 ms (status 1)
-=> 0% tests passed, 1 tests failed out of 1
 $ echo $?
 1
 ```
@@ -211,7 +210,7 @@ You can also pass arguments à la *argv* s follows.
 $ ./sample -r test.args -- a b c
 argc: 3, argv: a b c
 [SUCCESS] run test "test.args" in 0.45 ms (status 0, wstatus 0)
-=> 100% tests passed, 0 tests failed out of 1
+=> 0% tests passed, 1 tests failed out of 1
 ```
 
 ## Apply an external command to test output
@@ -292,7 +291,6 @@ $ ./sample_main
 [FAILURE] run test "test.failure" in 0.29 ms (status 1)
 [FAILURE] run test "othertest.failure" in 0.09 ms (status 1)
 [SUCCESS] run test "othertest.success" in 0.17 ms (status 0)
-=> 50% tests passed, 2 tests failed out of 4
 ```
 
 ---
