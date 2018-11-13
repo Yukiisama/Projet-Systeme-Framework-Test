@@ -120,7 +120,7 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
    fw->tests[fw->nbTest]->name = name;
    fw->tests[fw->nbTest]->func = func;
    fw->nbTest +=1;
-   printf(" %s | %s ", suite , name);
+   //printf(" %s | %s ", suite , name);
    return fw->tests[fw->nbTest-1];
 }
 
@@ -132,7 +132,7 @@ struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name
     }
     char suitename[200];
     sprintf(suitename,"%s_%s",suite,name);
-    printf("%s\n",suitename); // for debugging
+    //printf("%s\n",suitename); // for debugging
 
     void * handle = dlopen(fw->program,RTLD_LAZY);
     testfw_func_t func;
@@ -158,16 +158,15 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
     fprintf(stderr, "%s\n",command);
     FILE * f = popen(command, "r");
     
-    char * tab = ""; int i = 0;
-    f =popen(command, "w");
-		
-    while ( fgets(tab,100,f) != NULL ){
+    char  tab[20]; int i = 0;
+    //TODO
+    while(fgets(tab,20,f)!=NULL){ 
         i++;
-        printf("%s \n" , tab[i]);
-        testfw_register_symb(fw, suite, tab[i]);
-    }
+        //printf(" %d %s \n" ,i, tab);
+        testfw_register_symb(fw, suite, tab);}
+    
     pclose(f);
-    return 0;
+    return i;
 }
 
 /* ********** RUN TEST ********** */
