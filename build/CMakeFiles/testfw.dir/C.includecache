@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/net/cremi/aperigno/PROJET PS/testfw/testfw.c
+stdbool.h
+-
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+testfw.h
+/net/cremi/aperigno/PROJET PS/testfw/testfw.h
+dlfcn.h
+-
+
+/net/cremi/aperigno/PROJET PS/testfw/testfw.h
+stdbool.h
+-
+

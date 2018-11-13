@@ -1,0 +1,2 @@
+/usr/bin/ar qc libtestfw_main.a  CMakeFiles/testfw_main.dir/testfw_main.c.o
+/usr/bin/ranlib libtestfw_main.a

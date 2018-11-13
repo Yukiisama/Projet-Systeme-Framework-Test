@@ -154,17 +154,17 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
 	}
     sprintf(command,"nm --defined-only %s | cut -d ' ' -f 3 | grep \"^%s\"",program_name , suite);
     printf("%s\n",command);
-    FILE * f = popen(command, "r");
-    
+    FILE * f;
     char * tab = ""; int i = 0;
-    fgets(tab,100,f);
-    //while ( fgets(tab,100,f) != NULL ){
-      //  i++;
-        //printf("%s \n" , tab[i]);
-        //testfw_register_symb(fw, suite, tab[i]);
-    //}
+    f =popen(command, "w");
+		
+    while ( fgets(tab,100,f) != NULL ){
+        i++;
+        printf("%s \n" , tab[i]);
+        testfw_register_symb(fw, suite, tab[i]);
+    }
     pclose(f);
-    return i;
+    return 0;
 }
 
 /* ********** RUN TEST ********** */
