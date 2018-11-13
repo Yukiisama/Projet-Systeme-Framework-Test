@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/dysta/Cours/L3/prog-sys/projet/sample.c
+stdio.h
+-
+stdlib.h
+-
+assert.h
+-
+unistd.h
+-
+sample.h
+/home/dysta/Cours/L3/prog-sys/projet/sample.h
+
+/home/dysta/Cours/L3/prog-sys/projet/sample.h
+

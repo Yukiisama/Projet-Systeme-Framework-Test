@@ -54,8 +54,14 @@ struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cm
             exit(TESTFW_EXIT_FAILURE);
         }
     }
+    
+    int len = strlen(program) - 2;
+    char* program_name = malloc(sizeof(char) * len);
+    for(int i = 0; i < len; i++) {
+        program_name[i] = program[i + 2];
+    }
 
-    new->program = program;
+    new->program = program_name;
     new->timeout = timeout;
     new->logfile = logfile;
     new->cmd = cmd;
@@ -145,15 +151,10 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
         perror("invalid struct");
         exit(EXIT_FAILURE);
     }
-    char  command[100];
-    char * taba;
-    char program_name[100];
-    taba = fw->program;
-    for( int i =2 ; i< strlen(taba);i++){
-		program_name[i-2] = taba[i];
-	}
-    sprintf(command,"nm --defined-only %s | cut -d ' ' -f 3 | grep \"^%s\"",program_name , suite);
-    printf("%s\n",command);
+    char command[100];
+
+    sprintf(command,"nm --defined-only %s | cut -d ' ' -f 3 | grep \"^%s\"",fw->program , suite);
+    fprintf(stderr, "%s\n",command);
     FILE * f = popen(command, "r");
     
     char * tab = ""; int i = 0;

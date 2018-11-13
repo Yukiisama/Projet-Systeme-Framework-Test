@@ -1,0 +1,1 @@
+/usr/bin/cc  -Wall -fPIC -std=c99   CMakeFiles/hello.dir/hello.c.o  -o hello -rdynamic libtestfw_main.a libtestfw.a -ldl 
