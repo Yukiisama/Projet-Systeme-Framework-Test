@@ -1,1 +1,0 @@
-/usr/bin/cc  -Wall -fPIC -std=c99   CMakeFiles/sample_main.dir/sample_main.c.o CMakeFiles/sample_main.dir/sample.c.o  -o sample_main -rdynamic libtestfw.a -ldl 
