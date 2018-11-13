@@ -120,7 +120,7 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
    fw->tests[fw->nbTest]->name = name;
    fw->tests[fw->nbTest]->func = func;
    fw->nbTest +=1;
-   //printf(" %s | %s ", suite , name);
+   //printf(" %s | %s \n", suite , name);
    return fw->tests[fw->nbTest-1];
 }
 
@@ -158,12 +158,19 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
     fprintf(stderr, "%s\n",command);
     FILE * f = popen(command, "r");
     
-    char  tab[20]; int i = 0;
+    char  tab[200]; int i = 0;
     //TODO
-    while(fgets(tab,20,f)!=NULL){ 
+    while(fgets(tab,200,f)!=NULL){
+
+        char *tab2 = strchr (tab, '_')+1;
+        tab2[strlen(tab2)-1]='\0';
+        //strtok (tab2, '\n');
+      //  printf("%s \n" ,tab2);
+        testfw_register_symb(fw, suite, tab2);
+        struct test_t *lol = testfw_get(fw, i);
+        printf("%s_%s\n", lol->suite, lol->name);
         i++;
-        //printf(" %d %s \n" ,i, tab);
-        testfw_register_symb(fw, suite, tab);}
+        }
     
     pclose(f);
     return i;
