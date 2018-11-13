@@ -2,8 +2,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 #include "testfw.h"
+#include <dlfcn.h>
 
 #define DEFAULT_SUITE_NAME "defaultSuiteName"
 #define DEFAULT_TEST_NAME  "defaultTestName"
@@ -13,8 +14,8 @@
 
 struct testfw_t
 {
-    char * program; // filename executable 
-    int timeout; 
+    char * program; // filename executable
+    int timeout;
     char *logfile; // rediger dans un fichier
     char *cmd; // rediriger dans une commande
     bool silent; // automatiser , tests par défaut ?
@@ -97,13 +98,13 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
    if (fw == NULL || fw->tests ==NULL){
        perror("invalid struc");
        exit(EXIT_FAILURE);
-   } 
+   }
 
     if (suite == NULL)
         suite = DEFAULT_SUITE_NAME;
     if (name == NULL)
         name = DEFAULT_TEST_NAME;
-    
+
 
    if ( fw->nbTest >= fw->lenTests ){
        fw->lenTests *= 2;
@@ -113,18 +114,57 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
    fw->tests[fw->nbTest]->name = name;
    fw->tests[fw->nbTest]->func = func;
    fw->nbTest +=1;
-
+   printf(" %s | %s ", suite , name);
    return fw->tests[fw->nbTest-1];
 }
 
 struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name)
 {
-    return NULL;
+    if (fw == NULL || fw->tests ==NULL){
+       perror("invalid struc");
+       exit(EXIT_FAILURE);
+    }
+    char suitename[200];
+    sprintf(suitename,"%s_%s",suite,name);
+    printf("%s\n",suitename); // for debugging
+
+    void * handle = dlopen(fw->program,RTLD_LAZY);
+    testfw_func_t func;
+    * (void **)(&func) = dlsym(handle,suitename);
+    //dlclose(handle);
+
+    return testfw_register_func(fw,suite,name,func);
+
+
+
 }
 
 int testfw_register_suite(struct testfw_t *fw, char *suite)
 {
-    return 0;
+    if ( fw == NULL || fw->tests == NULL){
+        perror("invalid struct");
+        exit(EXIT_FAILURE);
+    }
+    char  command[100];
+    char * taba;
+    char program_name[100];
+    taba = fw->program;
+    for( int i =2 ; i< strlen(taba);i++){
+		program_name[i-2] = taba[i];
+	}
+    sprintf(command,"nm --defined-only %s | cut -d ' ' -f 3 | grep \"^%s\"",program_name , suite);
+    printf("%s\n",command);
+    FILE * f = popen(command, "r");
+    
+    char * tab = ""; int i = 0;
+    fgets(tab,100,f);
+    //while ( fgets(tab,100,f) != NULL ){
+      //  i++;
+        //printf("%s \n" , tab[i]);
+        //testfw_register_symb(fw, suite, tab[i]);
+    //}
+    pclose(f);
+    return i;
 }
 
 /* ********** RUN TEST ********** */
