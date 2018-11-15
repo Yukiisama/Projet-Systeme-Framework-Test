@@ -160,10 +160,12 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
     
     char * tab = ""; int i = 0;
     f =popen(command, "w");
+
+    
 		
     while ( fgets(tab,100,f) != NULL ){
         i++;
-        printf("%s \n" , tab[i]);
+        printf("%c \n" , tab[i]);
         testfw_register_symb(fw, suite, tab[i]);
     }
     pclose(f);
