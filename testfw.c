@@ -120,8 +120,11 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
         fw->tests = (struct test_t **) realloc(fw->tests,fw->lenTests);
     }
 
-    fw->tests[fw->nbTest]->suite = suite;
-    fw->tests[fw->nbTest]->name = name;
+    char name_cpy = *name;
+    char suite_cpy = *suite;
+
+    fw->tests[fw->nbTest]->suite = &suite_cpy;
+    fw->tests[fw->nbTest]->name = &name_cpy;
     fw->tests[fw->nbTest]->func = func;
     fw->nbTest += 1;
     //printf(" %s | %s \n", suite , name);
@@ -174,6 +177,16 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
         name = strtok(NULL, "_"); // on récupère le name
         testfw_register_symb(fw, tok, name);
     }
+
+    printf("==========\n");
+
+    for (int k = 0; k < testfw_length(fw); k++)
+    {
+        struct test_t *test = testfw_get(fw, k);
+        printf("%s.%s\n", test->suite, test->name);
+    }   
+
+    printf("==========\n");
 
 
     return 0;
