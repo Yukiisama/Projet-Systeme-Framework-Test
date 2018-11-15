@@ -128,6 +128,7 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
     strcpy(suitecpy, suite);
     strcpy(namecpy, name);
 
+
     fw->tests[fw->nbTest]->suite = suitecpy;
     fw->tests[fw->nbTest]->name = namecpy;
     fw->tests[fw->nbTest]->func = func;
@@ -143,15 +144,14 @@ struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name
        exit(EXIT_FAILURE);
     }
     char suitename[200];
-    testfw_func_t func;
     sprintf(suitename,"%s_%s",suite,name);
     //printf("%s\n",suitename); // for debugging
 
     void * handle = dlopen(fw->program,RTLD_LAZY);
+    testfw_func_t func;
     * (void **)(&func) = dlsym(handle,suitename);
     if (handle)
         dlclose(handle);
-    
 
     return testfw_register_func(fw,suite,name,func);
 
@@ -166,11 +166,11 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
         exit(EXIT_FAILURE);
     }
 
-    int size = 512;
+    int size = 512, i = 0;
     char buf[size];
     char *tok, *name;
-
     int commandLen;
+    
     commandLen = strlen("nm --defined-only  | cut -d ' ' -f 3 | grep \"^\"");
     commandLen += strlen(suite);
     commandLen += strlen(fw->program);
@@ -180,26 +180,14 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
 
     FILE * file = popen(command, "r");
     
-
-    while(fgets(buf, size, file) != NULL) {
+    for(;fgets(buf, size, file) != NULL; i++) {
         tok = strtok(buf, "_"); // on récupère le test
         name = strtok(NULL, "_"); // on récupère le name
-        name[strlen(name)-1]='\0';
+        name[strlen(name)-1]='\0'; //on enleve le \n
         testfw_register_symb(fw, tok, name);
     }
 
-    /*printf("==========\n");
-
-    for (int k = 0; k < testfw_length(fw); k++)
-    {
-        struct test_t *test = testfw_get(fw, k);
-        printf("%s.%s\n", test->suite, test->name);
-    }    
-
-    printf("==========\n");
-*/
-
-    return 0;
+    return i;
 }
 
 /* ********** RUN TEST ********** */
