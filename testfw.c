@@ -116,6 +116,8 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
        fw->lenTests *= 2;
        fw->tests = (struct test_t **) realloc(fw->tests,fw->lenTests);
    }
+    char* test1, test2;
+
    fw->tests[fw->nbTest]->suite = suite;
    fw->tests[fw->nbTest]->name = name;
    fw->tests[fw->nbTest]->func = func;
@@ -165,13 +167,17 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
         char *tab2 = strchr (tab, '_')+1;
         tab2[strlen(tab2)-1]='\0';
         //strtok (tab2, '\n');
-      //  printf("%s \n" ,tab2);
+       //printf("%s \n" ,tab2);
         testfw_register_symb(fw, suite, tab2);
-        struct test_t *lol = testfw_get(fw, i);
-        printf("%s_%s\n", lol->suite, lol->name);
         i++;
         }
-    
+        
+            int length = testfw_length(fw);
+            for (int k = 0; k < length; k++)
+        {
+            struct test_t *test = testfw_get(fw, k);
+           printf("test numéro %d : %s_%s\n",k, test->suite, test->name);
+        }
     pclose(f);
     return i;
 }
