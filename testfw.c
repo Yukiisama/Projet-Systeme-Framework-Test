@@ -101,10 +101,10 @@ struct test_t *testfw_get(struct testfw_t *fw, int k)
 
 struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name, testfw_func_t func)
 {
-   if (fw == NULL || fw->tests ==NULL){
+    if (fw == NULL || fw->tests ==NULL){
        perror("invalid struc");
        exit(EXIT_FAILURE);
-   }
+    }
 
     if (suite == NULL)
         suite = DEFAULT_SUITE_NAME;
@@ -112,16 +112,17 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
         name = DEFAULT_TEST_NAME;
 
 
-   if ( fw->nbTest >= fw->lenTests ){
-       fw->lenTests *= 2;
-       fw->tests = (struct test_t **) realloc(fw->tests,fw->lenTests);
-   }
-   fw->tests[fw->nbTest]->suite = suite;
-   fw->tests[fw->nbTest]->name = name;
-   fw->tests[fw->nbTest]->func = func;
-   fw->nbTest +=1;
-   printf(" %s | %s ", suite , name);
-   return fw->tests[fw->nbTest-1];
+    if ( fw->nbTest >= fw->lenTests ){
+        fw->lenTests *= 2;
+        fw->tests = (struct test_t **) realloc(fw->tests,fw->lenTests);
+    }
+
+    fw->tests[fw->nbTest]->suite = suite;
+    fw->tests[fw->nbTest]->name = name;
+    fw->tests[fw->nbTest]->func = func;
+    fw->nbTest +=1;
+    //printf(" %s | %s \n", suite , name);
+    return fw->tests[fw->nbTest-1];
 }
 
 struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name)
@@ -132,7 +133,7 @@ struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name
     }
     char suitename[200];
     sprintf(suitename,"%s_%s",suite,name);
-    printf("%s\n",suitename); // for debugging
+    //printf("%s\n",suitename); // for debugging
 
     void * handle = dlopen(fw->program,RTLD_LAZY);
     testfw_func_t func;
@@ -140,9 +141,6 @@ struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name
     //dlclose(handle);
 
     return testfw_register_func(fw,suite,name,func);
-
-
-
 }
 
 int testfw_register_suite(struct testfw_t *fw, char *suite)
@@ -158,18 +156,22 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
     fprintf(stderr, "%s\n",command);
     FILE * f = popen(command, "r");
     
-    char * tab = ""; int i = 0;
-    f =popen(command, "w");
+    char  tab[200]; int i = 0;
+    //TODO
+    while(fgets(tab,200,f)!=NULL){
 
-    
-		
-    while ( fgets(tab,100,f) != NULL ){
+        char *tab2 = strchr (tab, '_')+1;
+        tab2[strlen(tab2)-1]='\0';
+        //strtok (tab2, '\n');
+      //  printf("%s \n" ,tab2);
+        testfw_register_symb(fw, suite, tab2);
+        struct test_t *lol = testfw_get(fw, i);
+        printf("%s_%s\n", lol->suite, lol->name);
         i++;
-        printf("%c \n" , tab[i]);
-        testfw_register_symb(fw, suite, tab[i]);
     }
+    
     pclose(f);
-    return 0;
+    return i;
 }
 
 /* ********** RUN TEST ********** */
