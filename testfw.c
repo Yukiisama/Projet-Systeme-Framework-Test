@@ -20,6 +20,7 @@ struct testfw_t
     char *cmd; // rediriger dans une commande
     bool silent; // automatiser , tests par défaut ?
     bool verbose; // affichage détailler dans la console ( ie debug)
+    char * full_program; // contien le nom complet du programme
     struct test_t** tests;
     unsigned int nbTest; // contient le nombre de tests enregistré
     unsigned int lenTests; // contient la taille du tableau tests
@@ -62,6 +63,7 @@ struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cm
     }
 
     new->program = program_name;
+    new->full_program = program;
     new->timeout = timeout;
     new->logfile = logfile;
     new->cmd = cmd;
@@ -80,6 +82,7 @@ void testfw_free(struct testfw_t *fw)
             free(fw->tests[i]);
         }
         free(fw->tests);
+        free(fw->program);
     }
     free(fw);
 }
@@ -101,7 +104,7 @@ struct test_t *testfw_get(struct testfw_t *fw, int k)
 
 struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name, testfw_func_t func)
 {
-    if (fw == NULL || fw->tests ==NULL){
+    if (fw == NULL || fw->tests == NULL){
        perror("invalid struc");
        exit(EXIT_FAILURE);
     }
@@ -120,27 +123,34 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
     fw->tests[fw->nbTest]->suite = suite;
     fw->tests[fw->nbTest]->name = name;
     fw->tests[fw->nbTest]->func = func;
-    fw->nbTest +=1;
+    fw->nbTest += 1;
     //printf(" %s | %s \n", suite , name);
     return fw->tests[fw->nbTest-1];
 }
 
 struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name)
 {
-    if (fw == NULL || fw->tests ==NULL){
+    if (fw == NULL || fw->tests == NULL){
        perror("invalid struc");
        exit(EXIT_FAILURE);
     }
-    char suitename[200];
+
+    // prend une suite "test" et un name "failure" 
+    // doit donner test_failure
+
+    char suitename[sizeof(suite) + sizeof(name)];
     sprintf(suitename,"%s_%s",suite,name);
-    //printf("%s\n",suitename); // for debugging
+    //printf("== suite name == : %s\n",suitename); // for debuggin
 
-    void * handle = dlopen(fw->program,RTLD_LAZY);
-    testfw_func_t func;
-    * (void **)(&func) = dlsym(handle,suitename);
-    //dlclose(handle);
-
-    return testfw_register_func(fw,suite,name,func);
+    void * handle = dlopen(fw->full_program, RTLD_LAZY);
+    if (handle){
+        testfw_func_t func; 
+        int* tmp = (int*) dlsym(handle,suitename);
+        func = (testfw_func_t) &tmp;
+        dlclose(handle);
+        return testfw_register_func(fw,suite,name,func);
+    }
+    return NULL;
 }
 
 int testfw_register_suite(struct testfw_t *fw, char *suite)
@@ -150,28 +160,7 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
         exit(EXIT_FAILURE);
     }
 
-    char command[100];
-
-    sprintf(command,"nm --defined-only %s | cut -d ' ' -f 3 | grep \"^%s\"",fw->program , suite);
-    fprintf(stderr, "%s\n",command);
-    FILE * f = popen(command, "r");
-    
-    char  tab[200]; int i = 0;
-    //TODO
-    while(fgets(tab,200,f)!=NULL){
-
-        char *tab2 = strchr (tab, '_')+1;
-        tab2[strlen(tab2)-1]='\0';
-        //strtok (tab2, '\n');
-      //  printf("%s \n" ,tab2);
-        testfw_register_symb(fw, suite, tab2);
-        struct test_t *lol = testfw_get(fw, i);
-        printf("%s_%s\n", lol->suite, lol->name);
-        i++;
-    }
-    
-    pclose(f);
-    return i;
+    return 0;
 }
 
 /* ********** RUN TEST ********** */
