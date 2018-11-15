@@ -128,8 +128,6 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
     strcpy(suitecpy, suite);
     strcpy(namecpy, name);
 
-    namecpy[strlen(namecpy) - 1] = '\0';
-
     fw->tests[fw->nbTest]->suite = suitecpy;
     fw->tests[fw->nbTest]->name = namecpy;
     fw->tests[fw->nbTest]->func = func;
