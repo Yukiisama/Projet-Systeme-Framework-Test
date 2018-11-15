@@ -20,6 +20,7 @@ struct testfw_t
     char *cmd; // rediriger dans une commande
     bool silent; // automatiser , tests par défaut ?
     bool verbose; // affichage détailler dans la console ( ie debug)
+    char * full_program; // contien le nom complet du programme
     struct test_t** tests;
     unsigned int nbTest; // contient le nombre de tests enregistré
     unsigned int lenTests; // contient la taille du tableau tests
@@ -62,6 +63,7 @@ struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cm
     }
 
     new->program = program_name;
+    new->full_program = program;
     new->timeout = timeout;
     new->logfile = logfile;
     new->cmd = cmd;
@@ -80,6 +82,7 @@ void testfw_free(struct testfw_t *fw)
             free(fw->tests[i]);
         }
         free(fw->tests);
+        free(fw->program);
     }
     free(fw);
 }
@@ -101,7 +104,7 @@ struct test_t *testfw_get(struct testfw_t *fw, int k)
 
 struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name, testfw_func_t func)
 {
-   if (fw == NULL || fw->tests ==NULL){
+    if (fw == NULL || fw->tests == NULL){
        perror("invalid struc");
        exit(EXIT_FAILURE);
    }
@@ -112,41 +115,38 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
         name = DEFAULT_TEST_NAME;
 
 
-   if ( fw->nbTest >= fw->lenTests ){
-       fw->lenTests *= 2;
-       fw->tests = (struct test_t **) realloc(fw->tests,fw->lenTests);
-   }
+    if ( fw->nbTest >= fw->lenTests ){
+        fw->lenTests *= 2;
+        fw->tests = (struct test_t **) realloc(fw->tests,fw->lenTests);
+    }
     
-   fw->tests[fw->nbTest]->suite = suite;
-   fw->tests[fw->nbTest]->name = name;
-   fw->tests[fw->nbTest]->func = func;
-   fw->nbTest +=1;
-   //printf(" %s | %s \n", suite , name);
-   return fw->tests[fw->nbTest-1];
+
+    fw->tests[fw->nbTest]->suite = suite;
+    fw->tests[fw->nbTest]->name = name;
+    fw->tests[fw->nbTest]->func = func;
+    fw->nbTest += 1;
+    //printf(" %s | %s \n", suite , name);
+    return fw->tests[fw->nbTest-1];
 }
 
 struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name)
 {
-    if (fw == NULL || fw->tests ==NULL){
+    if (fw == NULL || fw->tests == NULL){
        perror("invalid struc");
        exit(EXIT_FAILURE);
     }
-    char suitename[200];
-    sprintf(suitename,"%s_%s",suite,name);
-    //printf("%s\n",suitename); // for debugging
 
-    void * handle = dlopen(fw->program,RTLD_LAZY);
-    if(!handle){
-        printf("");
+    void * handle = dlopen(fw->full_program, RTLD_LAZY);
+    if (handle){
+        testfw_func_t func; 
+        char suitename[strlen(suite) + strlen(name)];
+        sprintf(suitename,"%s_%s",suite,name);
+        int* tmp = (int*) dlsym(handle,suitename);
+        func = (testfw_func_t) &tmp;
+        dlclose(handle);
+        return testfw_register_func(fw,suite,name,func);
     }
-    testfw_func_t func;
-    * (void **)(&func) = dlsym(handle,suitename);
-    //dlclose(handle);
-
-    return testfw_register_func(fw,suite,name,func);
-
-
-
+    return NULL;
 }
 
 int testfw_register_suite(struct testfw_t *fw, char *suite)
@@ -156,35 +156,33 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
         exit(EXIT_FAILURE);
     }
 
-    char command[100];
+    int size = 512;
+    char buf[size];
+    char *tok, *name;
 
-    sprintf(command,"nm --defined-only %s | cut -d ' ' -f 3 | grep \"^%s\"",fw->program , suite);
-    fprintf(stderr, "%s\n",command);
-    FILE * f = popen(command, "r");
+    int commandLen;
+    commandLen = strlen("nm --defined-only  | cut -d ' ' -f 3 | grep \"^\"");
+    commandLen += strlen(suite);
+    commandLen += strlen(fw->program);
+
+    char command[commandLen];
+    sprintf(command, "nm --defined-only %s | cut -d ' ' -f 3 | grep \"^%s\"", fw->program, suite);
+
+    FILE * file = popen(command, "r");
     
-    char tab[200]; int i = 0;
-    //TODO
-    while(fgets(tab,200,f)!=NULL){
-
-        //char *tab2 = strchr (tab, '_')+1;
-        //tab2[strlen(tab2)-1]='\0';
-        testfw_register_symb(fw, suite, tab);
-        struct test_t *test = testfw_get(fw, i);
-        printf("test numéro %d : %s_%s POINTE SUR %p\n",i, test->suite, test->name, test->name);
-        test = testfw_get(fw, i-1);
-        printf("test numéro %d : %s_%s POINTE SUR %p \n",i-1, test->suite, test->name,test->name);
-        printf("tab : %p\n\n", tab);
-        i++;
-        }
-        
-        int length = testfw_length(fw);
-
-    for (int k = 0; k < length; k++){
-        struct test_t *test = testfw_get(fw, k);
-        printf("test numéro %d : %s_%s\n",k, test->suite, test->name);
+    while(fgets(buf, size, file) != NULL) {
+        tok = strtok(buf, "_"); // on récupère le test
+        name = strtok(NULL, "_"); // on récupère le name
+        testfw_register_symb(fw, tok, name);
     }
-    pclose(f);
-    return i;
+     int length = testfw_length(fw);
+        for (int k = 0; k < length; k++)
+        {
+            struct test_t *test = testfw_get(fw, k);
+            printf("%s.%s\n", test->suite, test->name);
+        }
+
+    return 0;
 }
 
 /* ********** RUN TEST ********** */
