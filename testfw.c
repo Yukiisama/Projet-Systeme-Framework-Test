@@ -135,16 +135,11 @@ struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name
        exit(EXIT_FAILURE);
     }
 
-    // prend une suite "test" et un name "failure" 
-    // doit donner test_failure
-
-    char suitename[sizeof(suite) + sizeof(name)];
-    sprintf(suitename,"%s_%s",suite,name);
-    //printf("== suite name == : %s\n",suitename); // for debuggin
-
     void * handle = dlopen(fw->full_program, RTLD_LAZY);
     if (handle){
         testfw_func_t func; 
+        char suitename[strlen(suite) + strlen(name)];
+        sprintf(suitename,"%s_%s",suite,name);
         int* tmp = (int*) dlsym(handle,suitename);
         func = (testfw_func_t) &tmp;
         dlclose(handle);
@@ -159,6 +154,27 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
         perror("invalid struct");
         exit(EXIT_FAILURE);
     }
+
+    int size = 512;
+    char buf[size];
+    char *tok, *name;
+
+    int commandLen;
+    commandLen = strlen("nm --defined-only  | cut -d ' ' -f 3 | grep \"^\"");
+    commandLen += strlen(suite);
+    commandLen += strlen(fw->program);
+
+    char command[commandLen];
+    sprintf(command, "nm --defined-only %s | cut -d ' ' -f 3 | grep \"^%s\"", fw->program, suite);
+
+    FILE * file = popen(command, "r");
+    
+    while(fgets(buf, size, file) != NULL) {
+        tok = strtok(buf, "_"); // on récupère le test
+        name = strtok(NULL, "_"); // on récupère le name
+        testfw_register_symb(fw, tok, name);
+    }
+
 
     return 0;
 }
