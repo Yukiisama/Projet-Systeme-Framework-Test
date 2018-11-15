@@ -79,6 +79,8 @@ void testfw_free(struct testfw_t *fw)
 {
     if ( fw != NULL ) {
         for (int i = 0; i < fw->lenTests; i++ ) {
+            free(fw->tests[i]->name);
+            free(fw->tests[i]->suite);
             free(fw->tests[i]);
         }
         free(fw->tests);
@@ -119,10 +121,15 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
         fw->lenTests *= 2;
         fw->tests = (struct test_t **) realloc(fw->tests,fw->lenTests);
     }
-    
 
-    fw->tests[fw->nbTest]->suite = suite;
-    fw->tests[fw->nbTest]->name = name;
+    char* suitecpy = malloc(strlen(suite)*sizeof(char));
+    char* namecpy = malloc(strlen(name)*sizeof(char));
+
+    strcpy(suitecpy, suite);
+    strcpy(namecpy, name);
+
+    fw->tests[fw->nbTest]->suite = suitecpy;
+    fw->tests[fw->nbTest]->name = namecpy;
     fw->tests[fw->nbTest]->func = func;
     fw->nbTest += 1;
     //printf(" %s | %s \n", suite , name);
@@ -170,19 +177,25 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
 
     FILE * file = popen(command, "r");
     
+
     while(fgets(buf, size, file) != NULL) {
         tok = strtok(buf, "_"); // on récupère le test
         name = strtok(NULL, "_"); // on récupère le name
         testfw_register_symb(fw, tok, name);
     }
-     int length = testfw_length(fw);
-        for (int k = 0; k < length; k++)
-        {
-            struct test_t *test = testfw_get(fw, k);
-            printf("%s.%s\n", test->suite, test->name);
-        }
 
-    return 0;
+    printf("==========\n");
+
+    for (int k = 0; k < testfw_length(fw); k++)
+    {
+        struct test_t *test = testfw_get(fw, k);
+        printf("%s.%s\n", test->suite, test->name);
+    }   
+
+    printf("==========\n");
+
+
+    return ;
 }
 
 /* ********** RUN TEST ********** */
