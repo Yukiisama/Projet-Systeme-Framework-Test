@@ -128,6 +128,8 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
     strcpy(suitecpy, suite);
     strcpy(namecpy, name);
 
+    namecpy[strlen(namecpy) - 1] = '\0';
+
     fw->tests[fw->nbTest]->suite = suitecpy;
     fw->tests[fw->nbTest]->name = namecpy;
     fw->tests[fw->nbTest]->func = func;
@@ -144,16 +146,16 @@ struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name
     }
 
     void * handle = dlopen(fw->full_program, RTLD_LAZY);
-    if (handle){
-        testfw_func_t func; 
-        char suitename[strlen(suite) + strlen(name)];
-        sprintf(suitename,"%s_%s",suite,name);
-        int* tmp = (int*) dlsym(handle,suitename);
-        func = (testfw_func_t) &tmp;
+    testfw_func_t func; 
+    char suitename[strlen(suite) + strlen(name)];
+    sprintf(suitename,"%s_%s",suite,name);
+    int* tmp = (int*) dlsym(handle,suitename);
+    func = (testfw_func_t) &tmp;
+
+    if (handle) 
         dlclose(handle);
-        return testfw_register_func(fw,suite,name,func);
-    }
-    return NULL;
+
+    return testfw_register_func(fw,suite,name,func);
 }
 
 int testfw_register_suite(struct testfw_t *fw, char *suite)
@@ -163,11 +165,11 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
         exit(EXIT_FAILURE);
     }
 
-    int size = 512;
+    int size = 512, i = 0;
     char buf[size];
     char *tok, *name;
-
     int commandLen;
+    
     commandLen = strlen("nm --defined-only  | cut -d ' ' -f 3 | grep \"^\"");
     commandLen += strlen(suite);
     commandLen += strlen(fw->program);
@@ -177,25 +179,13 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
 
     FILE * file = popen(command, "r");
     
-
-    while(fgets(buf, size, file) != NULL) {
+    for(;fgets(buf, size, file) != NULL; i++) {
         tok = strtok(buf, "_"); // on récupère le test
         name = strtok(NULL, "_"); // on récupère le name
         testfw_register_symb(fw, tok, name);
     }
 
-    printf("==========\n");
-
-    for (int k = 0; k < testfw_length(fw); k++)
-    {
-        struct test_t *test = testfw_get(fw, k);
-        printf("%s.%s\n", test->suite, test->name);
-    }   
-
-    printf("==========\n");
-
-
-    return ;
+    return i;
 }
 
 /* ********** RUN TEST ********** */
