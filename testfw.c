@@ -116,8 +116,7 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
        fw->lenTests *= 2;
        fw->tests = (struct test_t **) realloc(fw->tests,fw->lenTests);
    }
-    char* test1, test2;
-
+    
    fw->tests[fw->nbTest]->suite = suite;
    fw->tests[fw->nbTest]->name = name;
    fw->tests[fw->nbTest]->func = func;
@@ -137,6 +136,9 @@ struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name
     //printf("%s\n",suitename); // for debugging
 
     void * handle = dlopen(fw->program,RTLD_LAZY);
+    if(!handle){
+        printf("");
+    }
     testfw_func_t func;
     * (void **)(&func) = dlsym(handle,suitename);
     //dlclose(handle);
@@ -160,24 +162,27 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
     fprintf(stderr, "%s\n",command);
     FILE * f = popen(command, "r");
     
-    char  tab[200]; int i = 0;
+    char tab[200]; int i = 0;
     //TODO
     while(fgets(tab,200,f)!=NULL){
 
-        char *tab2 = strchr (tab, '_')+1;
-        tab2[strlen(tab2)-1]='\0';
-        //strtok (tab2, '\n');
-       //printf("%s \n" ,tab2);
-        testfw_register_symb(fw, suite, tab2);
+        //char *tab2 = strchr (tab, '_')+1;
+        //tab2[strlen(tab2)-1]='\0';
+        testfw_register_symb(fw, suite, tab);
+        struct test_t *test = testfw_get(fw, i);
+        printf("test numéro %d : %s_%s POINTE SUR %p\n",i, test->suite, test->name, test->name);
+        test = testfw_get(fw, i-1);
+        printf("test numéro %d : %s_%s POINTE SUR %p \n",i-1, test->suite, test->name,test->name);
+        printf("tab : %p\n\n", tab);
         i++;
         }
         
-            int length = testfw_length(fw);
-            for (int k = 0; k < length; k++)
-        {
-            struct test_t *test = testfw_get(fw, k);
-           printf("test numéro %d : %s_%s\n",k, test->suite, test->name);
-        }
+        int length = testfw_length(fw);
+
+    for (int k = 0; k < length; k++){
+        struct test_t *test = testfw_get(fw, k);
+        printf("test numéro %d : %s_%s\n",k, test->suite, test->name);
+    }
     pclose(f);
     return i;
 }
