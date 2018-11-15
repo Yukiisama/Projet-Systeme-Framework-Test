@@ -138,22 +138,25 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
 
 struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name)
 {
-    if (fw == NULL || fw->tests == NULL){
+    if (fw == NULL || fw->tests ==NULL){
        perror("invalid struc");
        exit(EXIT_FAILURE);
     }
+    char suitename[200];
+    testfw_func_t func;
+    sprintf(suitename,"%s_%s",suite,name);
+    //printf("%s\n",suitename); // for debugging
 
-    void * handle = dlopen(fw->full_program, RTLD_LAZY);
-    if (handle){
-        testfw_func_t func; 
-        char suitename[strlen(suite) + strlen(name)];
-        sprintf(suitename,"%s_%s",suite,name);
-        int* tmp = (int*) dlsym(handle,suitename);
-        func = (testfw_func_t) &tmp;
+    void * handle = dlopen(fw->program,RTLD_LAZY);
+    * (void **)(&func) = dlsym(handle,suitename);
+    if (handle)
         dlclose(handle);
-        return testfw_register_func(fw,suite,name,func);
-    }
-    return NULL;
+    
+
+    return testfw_register_func(fw,suite,name,func);
+
+
+
 }
 
 int testfw_register_suite(struct testfw_t *fw, char *suite)
@@ -181,21 +184,22 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
     while(fgets(buf, size, file) != NULL) {
         tok = strtok(buf, "_"); // on récupère le test
         name = strtok(NULL, "_"); // on récupère le name
+        name[strlen(name)-1]='\0';
         testfw_register_symb(fw, tok, name);
     }
 
-    printf("==========\n");
+    /*printf("==========\n");
 
     for (int k = 0; k < testfw_length(fw); k++)
     {
         struct test_t *test = testfw_get(fw, k);
         printf("%s.%s\n", test->suite, test->name);
-    }   
+    }    
 
     printf("==========\n");
+*/
 
-
-    return ;
+    return 0;
 }
 
 /* ********** RUN TEST ********** */
