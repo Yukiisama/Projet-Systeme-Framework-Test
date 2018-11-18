@@ -55,6 +55,9 @@ struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cm
         }
     }
 
+    //TODO: voir si il ne faut pas recopier le contenu des char* plutot que de recopier le pointeur
+    //TODO: voir si il faut pas remplacer le struct test_t ** par struct test_t *
+
 
     new->program = program;
     new->timeout = timeout;
@@ -179,6 +182,8 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
         if ( (ptr = strchr(name, '\n')) != NULL ) *ptr = '\0';
         testfw_register_symb(fw, tok, name);
     }
+
+    pclose(file);
 
     return i;
 }
