@@ -171,7 +171,7 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
     
     if(n >= sizeof(command)) {
         fprintf(stderr, "command too long for buffer\n");
-        exit(1);
+        exit(TESTFW_EXIT_FAILURE);
     }
 
     FILE * file = popen(command, "r");
