@@ -163,10 +163,19 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
     char *tok, *name, *ptr;
     int n = snprintf(command, size, "nm --defined-only %s | cut -d ' ' -f 3 | grep \"^%s\"", fw->program, suite);
     
+<<<<<<< HEAD
     if(n >= sizeof(command)) {
         fprintf(stderr, "command too long for buffer\n");
         exit(1);
     }
+=======
+    commandLen = strlen("nm --defined-only  | cut -d ' ' -f 3 | grep \"^_\"");
+    commandLen += strlen(suite);
+    commandLen += strlen(fw->program);
+
+    char command[commandLen];
+    sprintf(command, "nm --defined-only %s | cut -d ' ' -f 3 | grep \"^%s_\"", fw->program, suite);
+>>>>>>> 200951f28c7ee73c0d5f46516ce53254ca1a5044
 
     FILE * file = popen(command, "r");
     
