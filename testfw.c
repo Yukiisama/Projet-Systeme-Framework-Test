@@ -79,10 +79,8 @@ void testfw_free(struct testfw_t *fw)
 {
     if ( fw != NULL ) {
         for (int i = 0; i < fw->lenTests; i++ ) {
-            if(i<fw->nbTest){
             free(fw->tests[i]->name);
             free(fw->tests[i]->suite);
-            }
             free(fw->tests[i]);
         }
         free(fw->tests);
@@ -170,7 +168,7 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
 
     int size = 512, i = 0;
     char buf[size];
-    char *tok, *name;
+    char *tok, *name, *n;
     int commandLen;
     
     commandLen = strlen("nm --defined-only  | cut -d ' ' -f 3 | grep \"^_\"");
@@ -185,7 +183,9 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
     for(;fgets(buf, size, file) != NULL; i++) {
         tok = strtok(buf, "_"); // on récupère le test
         name = strtok(NULL, "_"); // on récupère le name
-        name[strlen(name)-1]='\0'; //on enleve le \n
+        n = strchr(name, '\n');
+        n='\0';
+        //name[strlen(name)-1]='\0'; //on enleve le \n
         testfw_register_symb(fw, tok, name);
     }
 
