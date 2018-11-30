@@ -26,22 +26,22 @@ Pour l'implémentations de la structure de test nous avons choisis en lisant les
 ```cpp
 struct testfw_t
 {
-char* program; 
-int timeout;
-char* logfile; 
-char* cmd; 
-bool silent; 
-bool verbose; 
-struct test_t** tests;
-unsigned int nbTest; 
-unsigned int lenTests; 
+  char* program; 
+  int timeout;
+  char* logfile; 
+  char* cmd; 
+  bool silent; 
+  bool verbose; 
+  struct test_t** tests;
+  unsigned int nbTest; 
+  unsigned int lenTests; 
 };
 ```
 En outre : 
  - Le champ ```program``` contient le nom de l’exécutable.
  - Le champ ```timeout``` contient le temps maximal accepté (en seconde) pour passer un test.
  - Le champ ```logfile``` contient le chemin vers un fichier ou les résultats des tests seront redirigés à la place de la sortie standard. 
- - Le champ ```cmd``` contient...
+ - Le champ ```cmd``` contient la commande qui sera exécuté.
  - Le champ ```silent``` sert à supprimer tout l'affichage (quand ```True```).
  - Le champ ```verbose``` sert à l'affichage d'information supplémentaire sur le fonctionnement du framework
 /!\ ```silent```et ```verbose``` sont concurrents il ne faut pas mettre les deux a ```True``` au même moment pour éviter un comportement non défini.
