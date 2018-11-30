@@ -3,8 +3,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "testfw.h"
+#include <unistd.h>
 #include <dlfcn.h>
+#include <fcntl.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+
+#include "testfw.h"
 
 #define DEFAULT_SUITE_NAME "defaultSuiteName"
 #define DEFAULT_TEST_NAME  "defaultTestName"
@@ -54,10 +61,6 @@ struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cm
             exit(TESTFW_EXIT_FAILURE);
         }
     }
-
-    //TODO: voir si il ne faut pas recopier le contenu des char* plutot que de recopier le pointeur
-    //TODO: voir si il faut pas remplacer le struct test_t ** par struct test_t *
-
 
     new->program = program;
     new->timeout = timeout;
@@ -130,7 +133,7 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
     fw->tests[fw->nbTest]->name = namecpy;
     fw->tests[fw->nbTest]->func = func;
     fw->nbTest += 1;
-    //printf(" %s | %s \n", suite , name);
+    
     return fw->tests[fw->nbTest-1];
 }
 
@@ -169,14 +172,14 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
     char *tok, *name, *ptr;
     int n = snprintf(command, size, "nm --defined-only %s | cut -d ' ' -f 3 | grep \"^%s\"", fw->program, suite);
     
-    if(n >= sizeof(command)) {
+    if (n >= sizeof(command)) {
         fprintf(stderr, "command too long for buffer\n");
         exit(TESTFW_EXIT_FAILURE);
     }
 
     FILE * file = popen(command, "r");
     
-    for(i = 0; fgets(buf, size, file) != NULL; i++) {
+    for (i = 0; fgets(buf, size, file) != NULL; i++) {
         tok = strtok(buf, "_"); // on récupère le test
         name = strtok(NULL, "_"); // on récupère le name
         if ( (ptr = strchr(name, '\n')) != NULL ) *ptr = '\0';
@@ -192,5 +195,42 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
 
 int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode_t mode)
 {
+    if (fw == NULL) {
+        perror("Null pointer ");
+        exit(TESTFW_EXIT_FAILURE);
+    }
+    if (mode != TESTFW_FORKS) {
+        perror("Mode not implemented yet! ");
+        exit(TESTFW_EXIT_FAILURE);
+    }
+    if (fw->logfile != NULL) {
+        int fd = open(fw->logfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd == -1) {
+            perror("Can't open/create logfile ");
+            exit(TESTFW_EXIT_FAILURE);
+        }
+        dup2(fd, STDOUT_FILENO);
+        dup2(fd, STDERR_FILENO);
+        close(fd);
+    }
+    if (fw->cmd != NULL) {
+        FILE * file = popen(fw->cmd, "r");
+        if (file == NULL) {
+            perror("Can't execute command ");
+            exit(TESTFW_EXIT_FAILURE);
+        }
+
+        // faut faire un truc mais jsp quoi j'ai pas compris
+
+        pclose(file);
+    }
+    struct timeval start, end;
+
+    gettimeofday(&start, NULL);
+
+
+
+    gettimeofday(&end, NULL);
+    
     return 0;
 }
