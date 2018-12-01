@@ -9,7 +9,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#include <sys/wait.h>
 
 #include "testfw.h"
 
@@ -26,7 +26,7 @@ struct testfw_t
     char *logfile;  // rediger dans un fichier
     char *cmd;      // rediriger dans une commande
     bool silent;    // automatiser , tests par défaut ?
-    bool verbose;   // affichage détailler dans la console ( ie debug)
+    bool verbose;   // affichage détailler dans la console (ie debug)
 
     struct test_t** tests;
     unsigned int nbTest; // contient le nombre de tests enregistré
@@ -43,7 +43,6 @@ struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cm
    }
 
     struct testfw_t * new = (struct testfw_t *) malloc(sizeof(struct testfw_t));
-
     if (new == NULL) {
         perror("malloc error");
         exit(TESTFW_EXIT_FAILURE);
@@ -54,6 +53,7 @@ struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cm
         perror("malloc error");
         exit(TESTFW_EXIT_FAILURE);
     }
+    
     for ( int i = 0; i < DEFAULT_NB_TESTS; i++) {
         new->tests[i] = (struct test_t *) malloc(sizeof(struct test_t));
         if (new->tests[i] == NULL) {
@@ -61,7 +61,7 @@ struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cm
             exit(TESTFW_EXIT_FAILURE);
         }
     }
-
+    
     new->program = program;
     new->timeout = timeout;
     new->logfile = logfile;
@@ -123,8 +123,8 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
         fw->tests = (struct test_t **) realloc(fw->tests,fw->lenTests);
     }
 
-    char* suitecpy = (char *) malloc(strlen(suite) * sizeof(char) + 1);
-    char* namecpy = (char *) malloc(strlen(name) * sizeof(char) + 1);
+    char* suitecpy = (char *) malloc((strlen(suite) + 1) * sizeof(char));
+    char* namecpy = (char *) malloc((strlen(name) + 1)* sizeof(char));
 
     strcpy(suitecpy, suite);
     strcpy(namecpy, name);
@@ -143,21 +143,23 @@ struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name
        perror("invalid struc");
        exit(TESTFW_EXIT_FAILURE);
     }
-    char suitename[128];
-    int n = snprintf(suitename, 128, "%s_%s", suite, name);
+    int size = 128;
+    char suitename[size];
+    int n = snprintf(suitename, size, "%s_%s", suite, name);
 
     if (n >= sizeof(suitename)) {
         fprintf(stderr, "suitename too large for buffer\n");
         exit(TESTFW_EXIT_FAILURE);
     }
-
-    void * handle = dlopen(fw->program,RTLD_LAZY);
     testfw_func_t func;
-    * (void **)(&func) = dlsym(handle,suitename);
-    if (handle)
-        dlclose(handle);
+    void * handle;
 
-    return testfw_register_func(fw,suite,name,func);
+    handle = dlopen(fw->program, RTLD_LAZY);
+    * (void **)(&func) = dlsym(handle, suitename);
+    /*if (handle)
+        dlclose(handle);
+    */
+    return testfw_register_func(fw, suite, name, func);
 }
 
 int testfw_register_suite(struct testfw_t *fw, char *suite)
@@ -170,7 +172,7 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
     int size = 256, i;
     char buf[size], command[size];
     char *tok, *name, *ptr;
-    int n = snprintf(command, size, "nm --defined-only %s | cut -d ' ' -f 3 | grep \"^%s\"", fw->program, suite);
+    int n = snprintf(command, size, "nm --defined-only %s | cut -d ' ' -f 3 | grep \"^%s_\"", fw->program, suite);
     
     if (n >= sizeof(command)) {
         fprintf(stderr, "command too long for buffer\n");
@@ -225,12 +227,21 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         pclose(file);
     }
     struct timeval start, end;
+    pid_t pid;
 
-    gettimeofday(&start, NULL);
-
-
-
-    gettimeofday(&end, NULL);
+    pid = fork();
+    if (pid == 0) {
+        printf("fils\n");
+        for (int i = 0; i < fw->nbTest; i++) {
+            gettimeofday(&start, NULL);
+            printf("[STATUS] run test %s.%s in %ld ms (reason)\n", fw->tests[i]->suite, fw->tests[i]->name, (end.tv_sec - start.tv_sec));
+            fw->tests[i]->func(argc, argv);
+            //TODO: Regarder pq le fils crève après la fin du premier test (maybe faire un fork de fork ? mais je penses pas)
+            gettimeofday(&end, NULL);
+            //if (!fw->verbose)
+        }
+    }
+    wait(NULL);
     
     return 0;
 }
