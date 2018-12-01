@@ -231,7 +231,6 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
 
     pid = fork();
     if (pid == 0) {
-        printf("fils\n");
         for (int i = 0; i < fw->nbTest; i++) {
             gettimeofday(&start, NULL);
             printf("[STATUS] run test %s.%s in %ld ms (reason)\n", fw->tests[i]->suite, fw->tests[i]->name, (end.tv_sec - start.tv_sec));
