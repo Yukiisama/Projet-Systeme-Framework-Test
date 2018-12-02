@@ -228,19 +228,21 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
     }
     struct timeval start, end;
     pid_t pid;
+    int status;
 
-    pid = fork();
-    if (pid == 0) {
-        for (int i = 0; i < fw->nbTest; i++) {
-            gettimeofday(&start, NULL);
-            printf("[STATUS] run test %s.%s in %ld ms (reason)\n", fw->tests[i]->suite, fw->tests[i]->name, (end.tv_sec - start.tv_sec));
+    for (int i = 0; i < fw->nbTest; i++) {
+        if ( i == 6) continue;
+        printf("run test %d %s.%s\n", i, fw->tests[i]->suite, fw->tests[i]->name);
+        gettimeofday(&start, NULL);
+        pid = fork();
+        if (pid == 0) {
             fw->tests[i]->func(argc, argv);
-            //TODO: Regarder pq le fils crève après la fin du premier test (maybe faire un fork de fork ? mais je penses pas)
-            gettimeofday(&end, NULL);
-            //if (!fw->verbose)
         }
+        wait(&status);
+        gettimeofday(&end, NULL);
+        if (fw->verbose)
+            printf("[STATUS] run test %s.%s in %ld ms (%d)\n", fw->tests[i]->suite, fw->tests[i]->name, (end.tv_usec - start.tv_usec), WEXITSTATUS(status));
     }
-    wait(NULL);
-    
+
     return 0;
 }
