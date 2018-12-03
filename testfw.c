@@ -246,16 +246,16 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         gettimeofday(&start, NULL);
         pid = fork();
         if (pid == 0) {
+            alarm(fw->timeout);
             close(STDERR_FILENO);
             close(STDOUT_FILENO);
-            alarm(fw->timeout);
             fils = getpid();
             int ret = fw->tests[i]->func(argc, argv);
             exit(ret);
         }
         wait(&status);
         gettimeofday(&end, NULL);
-        termSig = WTERMSIG(status); // sigint qui a terminé le prog
+        termSig   = WTERMSIG(status); // sigint qui a terminé le prog
         termState = WEXITSTATUS(status); // code retour du proc fils
 
         if (termState != 0 || termSig != 0) nbFail++;
@@ -264,8 +264,18 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
             strTermState = "KILLED";
             snprintf(strTermSig, 64, "signal \"%s\"", strsignal(termSig));
         } else {
-            strTermState = (termState == 0) ? "SUCCESS" : (termState == 124) ? "TIMEOUT" : "FAILURE"; 
-            snprintf(strTermSig, 64, "status %d", termState);
+            if (termState == 124) {
+                if ((end.tv_sec - start.tv_sec) >= fw->timeout) {
+                    strTermState = "TIMEOUT";
+                    snprintf(strTermSig, 64, "status %d", termState);
+                } else {
+                    strTermState = "KILLED";
+                    snprintf(strTermSig, 64, "signal \"%s\"", strsignal(SIGALRM));
+                }
+            } else {
+                strTermState = (termState == 0) ? "SUCCESS" : "FAILURE"; 
+                snprintf(strTermSig, 64, "status %d", termState);
+            }
         }
         if (fw->verbose)
             printf("[%s] run test %s.%s in %ld ms (%s)\n", strTermState, fw->tests[i]->suite, fw->tests[i]->name, (end.tv_usec - start.tv_usec), strTermSig);
