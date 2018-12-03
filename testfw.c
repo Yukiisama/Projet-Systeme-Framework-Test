@@ -228,21 +228,34 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
     }
     struct timeval start, end;
     pid_t pid;
-    int status;
+    int status, termSig, termState, nbFail = 0;
+    char *strTermState, strTermSig[64];
 
     for (int i = 0; i < fw->nbTest; i++) {
-        if ( i == 6) continue;
-        printf("run test %d %s.%s\n", i, fw->tests[i]->suite, fw->tests[i]->name);
+        if ( i == 6) continue; // sauter le infinite loop
         gettimeofday(&start, NULL);
         pid = fork();
         if (pid == 0) {
-            fw->tests[i]->func(argc, argv);
+            int ret = fw->tests[i]->func(argc, argv);
+            exit(ret);
         }
         wait(&status);
         gettimeofday(&end, NULL);
+        termSig = WTERMSIG(status);
+        termState = WEXITSTATUS(status);
+
+        if (termState != 0 || termSig != 0) nbFail++;
+
+        if (termSig != 0 && termSig != 1) {
+            strTermState = "KILLED";
+            snprintf(strTermSig, 64, "signal \"%s\"", strsignal(termSig));
+        } else {
+            strTermState = (termState == 0) ? "SUCCESS" : "FAILLURE"; 
+            snprintf(strTermSig, 64, "status %d", termState);
+        }
         if (fw->verbose)
-            printf("[STATUS] run test %s.%s in %ld ms (%d)\n", fw->tests[i]->suite, fw->tests[i]->name, (end.tv_usec - start.tv_usec), WEXITSTATUS(status));
+            printf("[%s] run test %s.%s in %ld ms (%s)\n", strTermState, fw->tests[i]->suite, fw->tests[i]->name, (end.tv_usec - start.tv_usec), strTermSig);
     }
 
-    return 0;
+    return nbFail;
 }
