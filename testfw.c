@@ -246,7 +246,7 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         gettimeofday(&start, NULL);
         pid = fork();
         if (pid == 0) {
-            alarm(fw->timeout);
+            if (fw->timeout != 0) alarm(fw->timeout);
             close(STDERR_FILENO);
             close(STDOUT_FILENO);
             fils = getpid();
@@ -260,6 +260,7 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
 
         if (termState != 0 || termSig != 0) nbFail++;
 
+        //TODO: reécrire cette partie pour la rendre plus jolie
         if (termSig != 0 && termSig != 1) {
             strTermState = "KILLED";
             snprintf(strTermSig, 64, "signal \"%s\"", strsignal(termSig));
@@ -277,8 +278,9 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
                 snprintf(strTermSig, 64, "status %d", termState);
             }
         }
+        float elapsed = ((end.tv_sec - start.tv_sec) * 1000.0) + ((end.tv_usec - start.tv_usec) / 1000000.0);
         if (fw->verbose)
-            printf("[%s] run test %s.%s in %ld ms (%s)\n", strTermState, fw->tests[i]->suite, fw->tests[i]->name, (end.tv_usec - start.tv_usec), strTermSig);
+            printf("[%s] run test %s.%s in %lf ms (%s)\n", strTermState, fw->tests[i]->suite, fw->tests[i]->name, elapsed, strTermSig);
     }
 
     return nbFail;
