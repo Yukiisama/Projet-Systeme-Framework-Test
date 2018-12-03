@@ -195,8 +195,14 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
 
 /* ********** RUN TEST ********** */
 
+pid_t fils;
+void alarm_handler (int signal){
+    exit(124);
+}
+
 int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode_t mode)
 {
+    pid_t pid;
     if (fw == NULL) {
         perror("Null pointer ");
         exit(TESTFW_EXIT_FAILURE);
@@ -227,15 +233,21 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         pclose(file);
     }
     struct timeval start, end;
-    pid_t pid;
+    //pid_t pid;
     int status, termSig, termState, nbFail = 0;
     char *strTermState, strTermSig[64];
-
+    struct sigaction s;
+    s.sa_handler = alarm_handler;
+    s.sa_flags = 0;
+    sigaction(SIGALRM,&s,NULL);
+    
     for (int i = 0; i < fw->nbTest; i++) {
-        if ( i == 6) continue; // sauter le infinite loop
+        //if ( i == 6) continue; // sauter le infinite loop
         gettimeofday(&start, NULL);
         pid = fork();
         if (pid == 0) {
+            alarm(fw->timeout);
+            fils = getpid();
             int ret = fw->tests[i]->func(argc, argv);
             exit(ret);
         }
