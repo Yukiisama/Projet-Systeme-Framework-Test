@@ -232,7 +232,7 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
     char *strTermState, strTermSig[64];
 
     for (int i = 0; i < fw->nbTest; i++) {
-        if ( i == 6) continue; // sauter le infinite loop
+        if (i == 6) continue; // sauter le infinite loop
         gettimeofday(&start, NULL);
         pid = fork();
         if (pid == 0) {
