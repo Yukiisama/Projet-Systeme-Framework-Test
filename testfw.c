@@ -278,9 +278,9 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
                 snprintf(strTermSig, 64, "status %d", termState);
             }
         }
-        float elapsed = ((end.tv_sec - start.tv_sec) * 1000.0) + ((end.tv_usec - start.tv_usec) / 1000000.0);
+        float elapsed = ((end.tv_sec - start.tv_sec) * 1000.0) + ((end.tv_usec - start.tv_usec) / 1000.0);
         if (fw->verbose)
-            printf("[%s] run test %s.%s in %lf ms (%s)\n", strTermState, fw->tests[i]->suite, fw->tests[i]->name, elapsed, strTermSig);
+            printf("[%s] run test \"%s.%s\" in %lf ms (%s)\n", strTermState, fw->tests[i]->suite, fw->tests[i]->name, elapsed, strTermSig);
     }
 
     return nbFail;
