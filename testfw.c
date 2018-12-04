@@ -238,7 +238,6 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
 
     //FIXME: c'est bloquant ptn de merde
     if (fw->cmd != NULL) {
-        printf("Executing commande \n");
         file = popen(fw->cmd, "w");
         if (file == NULL) {
             perror("Can't execute command ");
@@ -257,7 +256,8 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         gettimeofday(&start, NULL);
         pid = fork();
         if (pid == 0) {
-            exit(launch_test(fw, i, argc, argv));
+            int ret = launch_test(fw, i, argc, argv);
+            exit(ret);
         }
         wait(&status);
         gettimeofday(&end, NULL);
