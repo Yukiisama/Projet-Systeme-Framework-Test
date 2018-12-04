@@ -195,14 +195,20 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
 
 /* ********** RUN TEST ********** */
 
-pid_t fils;
 void alarm_handler (int signal){
     exit(124);
 }
 
+int launch_test(struct testfw_t* fw, int i, int argc, char* argv[]) {
+    if (fw->timeout != 0) 
+        alarm(fw->timeout);
+    close(STDERR_FILENO);
+    close(STDOUT_FILENO);
+    return fw->tests[i]->func(argc, argv);
+}
+
 int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode_t mode)
 {
-    pid_t pid;
     if (fw == NULL) {
         perror("Null pointer ");
         exit(TESTFW_EXIT_FAILURE);
@@ -211,6 +217,14 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         perror("Mode not implemented yet! ");
         exit(TESTFW_EXIT_FAILURE);
     }
+    //déclaration des variables 
+    struct timeval start, end;
+    pid_t pid;
+    int status, termSig, termState, nbFail = 0;
+    char *strTermState, strTermSig[64];
+    struct sigaction s;
+    FILE * file = stdout;
+
     if (fw->logfile != NULL) {
         int fd = open(fw->logfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (fd == -1) {
@@ -221,37 +235,29 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         dup2(fd, STDERR_FILENO);
         close(fd);
     }
+
+    //FIXME: c'est bloquant ptn de merde
     if (fw->cmd != NULL) {
-        FILE * file = popen(fw->cmd, "r");
+        printf("Executing commande \n");
+        file = popen(fw->cmd, "w");
         if (file == NULL) {
             perror("Can't execute command ");
             exit(TESTFW_EXIT_FAILURE);
         }
 
-        // faut faire un truc mais jsp quoi j'ai pas compris
-
-        pclose(file);
+        //pclose(file);
     }
-    struct timeval start, end;
-    //pid_t pid;
-    int status, termSig, termState, nbFail = 0;
-    char *strTermState, strTermSig[64];
-    struct sigaction s;
+
     s.sa_handler = alarm_handler;
     s.sa_flags = 0;
-    sigaction(SIGALRM,&s,NULL);
+    sigaction(SIGALRM, &s, NULL);
     
     for (int i = 0; i < fw->nbTest; i++) 
     {
         gettimeofday(&start, NULL);
         pid = fork();
         if (pid == 0) {
-            if (fw->timeout != 0) alarm(fw->timeout);
-            close(STDERR_FILENO);
-            close(STDOUT_FILENO);
-            fils = getpid();
-            int ret = fw->tests[i]->func(argc, argv);
-            exit(ret);
+            exit(launch_test(fw, i, argc, argv));
         }
         wait(&status);
         gettimeofday(&end, NULL);
@@ -278,9 +284,19 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
                 snprintf(strTermSig, 64, "status %d", termState);
             }
         }
+        
         float elapsed = ((end.tv_sec - start.tv_sec) * 1000.0) + ((end.tv_usec - start.tv_usec) / 1000.0);
         if (fw->verbose)
-            printf("[%s] run test \"%s.%s\" in %.2lf ms (%s)\n", strTermState, fw->tests[i]->suite, fw->tests[i]->name, elapsed, strTermSig);
+            fprintf(file, "[%s] run test \"%s.%s\" in %.2lf ms (%s)\n", 
+                strTermState, 
+                fw->tests[i]->suite, 
+                fw->tests[i]->name, 
+                elapsed, 
+                strTermSig
+            );
+        
+        //if (fw->cmd != NULL)
+            //pclose(file);
     }
 
     return nbFail;
