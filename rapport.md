@@ -1,7 +1,4 @@
-﻿
-﻿
-
-# Présentation du Projet
+﻿# Présentation du Projet
 
 Le but de ce projet est de développer un framework de tests à partir de nos compétences en programmation système.
 Le langage utilisé est donc le C.
@@ -11,11 +8,11 @@ La première partie (Partie A) consiste à l'implémentation de la structure qui
 La deuxième partie (Partie B) consiste elle à l'implémentation de la fonction permettant de lancer l’exécution de tous les tests enregistrés dans la structure.
 
 
-# Partie A
+# Partie A : ajout des tests
 
 ## Structure de test, allocation et libération de mémoire
 
-Pour l'implémentations de la structure de test nous avons choisis en lisant les paramètres de la fonction d'initialisation fournie et en ajoutant des champs qu'on a jugé nécessaires.
+Pour l'implémentation de la structure de test nous avons choisis en lisant les paramètres de la fonction d'initialisation fournie et en ajoutant des champs qu'on a jugé nécessaires.
 
   
 ```cpp
@@ -41,7 +38,7 @@ En outre :
  - Le champ ```verbose``` sert à l'affichage d'information supplémentaire sur le fonctionnement du framework.
 - Le champ ```tests``` est un tableau (dynamique) contenant les tests ajoutés.
 - Le champ ```nbTest``` est le nombre de tests présents dans le tableau.
-- Le champ ```lenTest``` est la taille actuelle du tableau afin de pouvoir le réalloc quand sa capacité n'est plus suffisante.
+- Le champ ```lenTest``` est la taille actuelle du tableau afin de pouvoir le realloc quand sa capacité n'est plus suffisante.
 
 /!\ ```logfile``` et ```timeout``` sont deux options exclusives on ne doit pas mettre les deux en même temps sous peine d'avoir un comportement indéfini. /!\
 /!\ ```silent```et ```verbose``` sont "concurrent" si les deux sont mis a ```True```, ```silent``` supprime l'affichage et domine ```verbose```. /!\
@@ -62,6 +59,9 @@ L'ajout de tests se fait a partir de trois fonctions différentes :
 
  - ```testfw_register_func``` prend en paramètre ```suite``` (un préfixe au nom de la fonction, qui va servir à son "identification"), ```name``` (qui est le nom de la fonction) et un pointeur sur une fonction, elle va tout simplement l'enregistrer à la fin de notre tableau ```tests``` de la structure (et realloc de la place en cas de tableau saturé).
  - ```testfw_register_symb``` prend en paramètre ```suite``` et ```name``` , elle va charger dynamiquement l'exécutable (qui est notre champ ```program``` de la structure) avec ```dlopen``` puis chercher la fonction dont le nom est créé par la concaténation de ```suite_name``` avec ```dlsym```, elle appelle ensuite la fonction précédente qui va enregistrer la fonction chargé dynamiquement dans notre tableau.
- - ```test_fw_register_suite``` prend en paramètre ```suite```, elle va chercher dynamiquement dans l'exécutable toute les fonctions commençant par ```suite```, pour cela on met le résultat de la commande ```"nm --defined-only program | cut -d ' ' -f 3 | grep \"suite_\"``` (avec ```program``` le nom de notre executable dans la structure et ```suite``` la suite prise en paramètre) dans un file qu'on va parser ligne par ligne, chaque ligne va nous permettre d'appeler la fonction précédente.
+ - ```test_fw_register_suite``` prend en paramètre ```suite```, elle va chercher dynamiquement dans l'exécutable toute les fonctions commençant par ```suite```, pour cela on met le résultat de la commande ```"nm --defined-only program | cut -d ' ' -f 3 | grep \"suite_\"``` (avec ```program``` le nom de notre exécutable dans la structure et ```suite``` la suite prise en paramètre) dans un file qu'on va parser ligne par ligne, chaque ligne va nous permettre d'appeler la fonction précédente.
 
 On remarque que chaque fonction est dépendante de la précédente (```test_fw_register_suite``` a besoin de ```testfw_register_symb``` qui a besoin de ```testfw_register_func```) le moindre problème se répercute donc sur une autre fonction. Notre groupe a eu un problème avec ```test_fw_register_suite``` qui semblait bien enregistrer la fonction dans la boucle mais une fois sortie, seul la dernière fonction était enregistrer (et dans toute les case de notre tableau ```tests```) ce problème était causé par le fait qu'on mettait tout simplement le pointeur du nom du test directement dans le champ sans en faire de copie, donc à la fin de la boucle toute les cases pointaient vers le même nom causant ainsi notre problème. Nous avons résolu notre problème en créant un pointeur sur une chaîne de caractère ou on à copié le nom et en mettant ce nouveau pointeur à la place.  
+
+# Partie B : exécution des tests
+
