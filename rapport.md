@@ -1,4 +1,6 @@
 ﻿
+﻿
+
 # Présentation du Projet
 
 Le but de ce projet est de développer un framework de tests à partir de nos compétences en programmation système.
@@ -59,5 +61,7 @@ Avant de pouvoir implémenter les fonctions d'ajout de tests nous avons du coder
 L'ajout de tests se fait a partir de trois fonctions différentes : 
 
  - ```testfw_register_func``` prend en paramètre ```suite``` (un préfixe au nom de la fonction, qui va servir à son "identification"), ```name``` (qui est le nom de la fonction) et un pointeur sur une fonction, elle va tout simplement l'enregistrer à la fin de notre tableau ```tests``` de la structure (et realloc de la place en cas de tableau saturé).
- - ```testfw_register_symb``` prend en paramètre ```suite``` et ```name``` , elle va charger dynamiquement la bibliothèque (qui est notre champ ```program``` de la structure) avec ```dlopen``` puis chercher la fonction dont le nom est créé par la concaténation de ```suite_name``` avec ```dlsym```, elle appelle ensuite la fonction précédente qui va enregistrer la fonction chargé dynamiquement dans notre tableau.
- - 
+ - ```testfw_register_symb``` prend en paramètre ```suite``` et ```name``` , elle va charger dynamiquement l'exécutable (qui est notre champ ```program``` de la structure) avec ```dlopen``` puis chercher la fonction dont le nom est créé par la concaténation de ```suite_name``` avec ```dlsym```, elle appelle ensuite la fonction précédente qui va enregistrer la fonction chargé dynamiquement dans notre tableau.
+ - ```test_fw_register_suite``` prend en paramètre ```suite```, elle va chercher dynamiquement dans l'exécutable toute les fonctions commençant par ```suite```, pour cela on met le résultat de la commande ```"nm --defined-only program | cut -d ' ' -f 3 | grep \"suite_\"``` (avec ```program``` le nom de notre executable dans la structure et ```suite``` la suite prise en paramètre) dans un file qu'on va parser ligne par ligne, chaque ligne va nous permettre d'appeler la fonction précédente.
+
+On remarque que chaque fonction est dépendante de la précédente (```test_fw_register_suite``` a besoin de ```testfw_register_symb``` qui a besoin de ```testfw_register_func```) le moindre problème se répercute donc sur une autre fonction. Notre groupe a eu un problème avec ```test_fw_register_suite``` qui semblait bien enregistrer la fonction dans la boucle mais une fois sortie, seul la dernière fonction était enregistrer (et dans toute les case de notre tableau ```tests```) ce problème était causé par le fait qu'on mettait tout simplement le pointeur du nom du test directement dans le champ sans en faire de copie, donc à la fin de la boucle toute les cases pointaient vers le même nom causant ainsi notre problème. Nous avons résolu notre problème en créant un pointeur sur une chaîne de caractère ou on à copié le nom et en mettant ce nouveau pointeur à la place.  
