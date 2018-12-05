@@ -22,18 +22,29 @@
 struct testfw_t
 {
     char * program; // filename executable
-    int timeout;
-    char *logfile;  // rediger dans un fichier
-    char *cmd;      // rediriger dans une commande
-    bool silent;    // automatiser , tests par défaut ?
-    bool verbose;   // affichage détailler dans la console (ie debug)
+    int timeout;	// max time to execute a test
+    char *logfile;  // redirect into logfile
+    char *cmd;      // redirect into a cmd (popen used)
+    bool silent;    // delete whole display information
+    bool verbose;   // Use this for debug purpose , display more informations
 
-    struct test_t** tests;
-    unsigned int nbTest; // contient le nombre de tests enregistré
-    unsigned int lenTests; // contient la taille du tableau tests
+    struct test_t** tests; // struct which contain all tests
+    unsigned int nbTest;   // nb tests available
+    unsigned int lenTests; // size of test tab
 };
 
 /* ********** FRAMEWORK ********** */
+/**
+ * @brief initialize test framework
+ *
+ * @param program the filename of this executable
+ * @param timeout the time limits (in sec.) for each test, else 0.
+ * @param logfile the file in which to redirect all test outputs (standard & error), else NULL
+ * @param cmd a shell command in which to redirect all test outputs (standard & erro),else NULL
+ * @param silent if true, the test framework runs in silent mode
+ * @param verbose if true, the test framework runs in verbose mode
+ * @return a pointer on a new test framework structure
+ */
 struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cmd, bool silent, bool verbose)
 {
    timeout = ( timeout < 0 ) ? 0 : timeout;
@@ -61,7 +72,7 @@ struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cm
             exit(TESTFW_EXIT_FAILURE);
         }
     }
-    
+    //Assign struct testfw_t
     new->program = program;
     new->timeout = timeout;
     new->logfile = logfile;
@@ -74,7 +85,11 @@ struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cm
 
     return new;
 }
-
+/**
+ * @brief finalize the test framework and free all memory
+ *
+ * @param fw the test framework to be freed
+ */
 void testfw_free(struct testfw_t *fw)
 {
     if (fw != NULL) {
@@ -89,12 +104,23 @@ void testfw_free(struct testfw_t *fw)
     }
     free(fw);
 }
-
+/**
+ * @brief get number of registered tests
+ *
+ * @param fw the test framework
+ * @return the number of registered tests
+ */
 int testfw_length(struct testfw_t *fw)
 {
     return ( fw != NULL ) ? fw->nbTest : -1;
 }
-
+/**
+ * @brief get a registered test
+ *
+ * @param fw the test framework
+ * @param k index of the test to get (k >=0)
+ * @return a pointer on the k-th registered test
+ */
 struct test_t *testfw_get(struct testfw_t *fw, int k)
 {
     if ( fw != NULL && fw->tests != NULL ) {
@@ -105,6 +131,15 @@ struct test_t *testfw_get(struct testfw_t *fw, int k)
 
 /* ********** REGISTER TEST ********** */
 
+/**
+ * @brief register a single test function
+ *
+ * @param fw the test framework
+ * @param suite a suite name in which to register this test
+ * @param name a test name
+ * @param func a test function
+ * @return a pointer to the structure, that registers this test
+ */
 struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name, testfw_func_t func)
 {
     if (fw == NULL || fw->tests == NULL){
@@ -136,7 +171,14 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
     
     return fw->tests[fw->nbTest-1];
 }
-
+/**
+ * @brief register a single test function named "<suite>_<name>""
+ *
+ * @param fw the test framework
+ * @param suite a suite name in which to register this test
+ * @param name a test name
+ * @return a pointer to the structure, that registers this test
+ */
 struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name)
 {
     if (fw == NULL || fw->tests ==NULL){
@@ -161,7 +203,13 @@ struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name
     */
     return testfw_register_func(fw, suite, name, func);
 }
-
+/**
+ * @brief register all test functions named "<suite>_*"
+ *
+ * @param fw the test framework
+ * @param suite a suite name in which to register these tests
+ * @return the number of new registered tests
+ */
 int testfw_register_suite(struct testfw_t *fw, char *suite)
 {
     if ( fw == NULL || fw->tests == NULL){
@@ -194,11 +242,20 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
 }
 
 /* ********** RUN TEST ********** */
+/**
+ * @brief This handler will be used for timeout purpose
+ *
+ * @param Signal on which we specify the action ( SIG_ALRM)
+ */
 
 void alarm_handler (int signal){
     exit(TESTFW_EXIT_TIMEOUT);
 }
-
+/**
+ * @brief Redirect all test outputs (standard & error)
+ *
+ * @param Test framework structure ( contain the logfile name)
+ */
 void redirect_logfile(struct testfw_t* fw) {
     int fd = open(fw->logfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd == -1) {
@@ -209,7 +266,13 @@ void redirect_logfile(struct testfw_t* fw) {
     dup2(fd, STDERR_FILENO);
     close(fd);
 }
-
+/**
+ * @brief Redirect all test outputs (standard & error) in shell command 
+ *
+ * @param Test framework structure ( contain the command)
+ * @param Alias of standard output 
+ * @param Alias of standard error
+ */
 FILE* redirect_cmd(struct testfw_t* fw, int* std_save, int* err_save) {
     FILE * file = popen(fw->cmd, "w");
     if (file == NULL) {
@@ -234,7 +297,14 @@ FILE* redirect_cmd(struct testfw_t* fw, int* std_save, int* err_save) {
     pclose(file);
     */
 }
-
+/**
+ * @brief Launch the i-th test and setup timeout , verbose and silent mode if specify 
+ *
+ * @param Test framework structure ( contain verbose ,silent , timeout)
+ * @param The i-th test to be run
+ * @param Main int argc
+ * @param Main char * argv[]
+ */
 int launch_test(struct testfw_t* fw, int i, int argc, char* argv[]) {
     if (fw == NULL) {
         perror("Null struct in launch_test ");
@@ -257,6 +327,15 @@ int launch_test(struct testfw_t* fw, int i, int argc, char* argv[]) {
     return fw->tests[i]->func(argc, argv);
 }
 
+/**
+ * @brief run all registered tests
+ *
+ * @param fw the test framework
+ * @param argc the number of arguments passed to each test function
+ * @param argv the array of arguments passed to each test function
+ * @param mode the execution mode in which to run each test function
+ * @return the number of tests that fail
+ */
 int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode_t mode)
 {
     if (fw == NULL) {
@@ -267,13 +346,13 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         perror("Mode not implemented yet! ");
         exit(TESTFW_EXIT_FAILURE);
     }
-    //déclaration des variables 
-    struct timeval start, end;
+    //Variable Declaration
+    struct timeval start, end; //time struct to mesurate time
     pid_t pid;
     int status, termSig, termState, nbFail = 0, std_save, err_save;
     char *strTermState, strTermSig[64];
     struct sigaction s;
-    FILE * file;
+    FILE * file; //used if cmd != NULL
     float time;
 
     if (fw->logfile != NULL) {
@@ -296,17 +375,17 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         }
         wait(&status);
         gettimeofday(&end, NULL);
-        termSig   = WTERMSIG(status); // sigint qui a terminé le prog
-        termState = WEXITSTATUS(status); // code retour du proc fils
+        termSig   = WTERMSIG(status); // sigint which terminate the prog
+        termState = WEXITSTATUS(status); // return code of the child process
 
          if (fw->cmd != NULL) {
             dup2(std_save, STDOUT_FILENO);
             dup2(err_save, STDERR_FILENO);
          }
-
+		//if one test failed 
         if (termState != TESTFW_EXIT_SUCCESS || termSig != TESTFW_EXIT_SUCCESS) 
             nbFail++;
-
+		//if test has been killed
         if (termSig != TESTFW_EXIT_SUCCESS && termSig != TESTFW_EXIT_FAILURE) {
             strTermState = "KILLED";
             snprintf(strTermSig, 64, "signal \"%s\"", strsignal(termSig));
@@ -328,7 +407,7 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
                 snprintf(strTermSig, 64, "status %d", WEXITSTATUS(ret));
             }
         }
-        
+        //time elapsed since test has been launched
         time = ((end.tv_sec - start.tv_sec) * 1000.0) + ((end.tv_usec - start.tv_usec) / 1000.0);
         printf("[%s] run test \"%s.%s\" in %.2lf ms (%s)\n", 
             strTermState, 
