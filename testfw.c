@@ -274,6 +274,7 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
     char *strTermState, strTermSig[64];
     struct sigaction s;
     FILE * file;
+    float time;
 
     if (fw->logfile != NULL) {
         //FIXME: regarder pourquoi les tests apparaissent plusieurs fois
@@ -302,7 +303,7 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
             dup2(std_save, STDOUT_FILENO);
             dup2(err_save, STDERR_FILENO);
          }
-         
+
         if (termState != TESTFW_EXIT_SUCCESS || termSig != TESTFW_EXIT_SUCCESS) 
             nbFail++;
 
@@ -328,12 +329,12 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
             }
         }
         
-        float elapsed = ((end.tv_sec - start.tv_sec) * 1000.0) + ((end.tv_usec - start.tv_usec) / 1000.0);
+        time = ((end.tv_sec - start.tv_sec) * 1000.0) + ((end.tv_usec - start.tv_usec) / 1000.0);
         printf("[%s] run test \"%s.%s\" in %.2lf ms (%s)\n", 
             strTermState, 
             fw->tests[i]->suite, 
             fw->tests[i]->name, 
-            elapsed, 
+            time, 
             strTermSig
         );
     }
