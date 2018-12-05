@@ -210,7 +210,8 @@ int launch_test(struct testfw_t* fw, int i, int argc, char* argv[]) {
         fw->tests[i]->name,
         fw->timeout,
         fw->silent);
-    else {
+    
+    if(fw->silent) {
         close(STDOUT_FILENO);
         close(STDERR_FILENO);
     }
@@ -231,7 +232,7 @@ void redirect_logfile(struct testfw_t* fw) {
     close(fd);
 }
 
-void redirect_cmd(struct testfw_t* fw, int* std_save, int* err_save) {
+FILE* redirect_cmd(struct testfw_t* fw, int* std_save, int* err_save) {
     FILE * file = popen(fw->cmd, "w");
     if (file == NULL) {
         perror("Can't execute command ");
@@ -240,8 +241,16 @@ void redirect_cmd(struct testfw_t* fw, int* std_save, int* err_save) {
     *std_save = dup(STDOUT_FILENO);
     *err_save = dup(STDERR_FILENO);
     int fd = fileno(file);
-    dup2(fd, STDOUT_FILENO);
-    dup2(fd, STDERR_FILENO);
+
+    if (dup2(fd, STDOUT_FILENO) == -1){
+       perror("dup2");
+       exit(EXIT_FAILURE);
+    }
+    if(dup2(fd, STDERR_FILENO) == -1) {
+       perror("dup2");
+       exit(EXIT_FAILURE);
+    }
+    return file;
     /*
     close(fd); // a faire ??
     pclose(file);
@@ -264,11 +273,8 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
     int status, termSig, termState, nbFail = 0, std_save, err_save;
     char *strTermState, strTermSig[64];
     struct sigaction s;
-    FILE * file = stdout;
+    FILE * file;
 
-    if (fw->cmd != NULL) {
-        redirect_cmd(fw, &std_save, &err_save); //FIXME: regarder pourquoi on a des affichages en trop
-    }
     if (fw->logfile != NULL) {
         redirect_logfile(fw);
     }
@@ -278,9 +284,13 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
     sigaction(SIGALRM, &s, NULL);
     
     for (int i = 0; i < fw->nbTest; i++) {
+        if (fw->cmd != NULL) {
+            file = redirect_cmd(fw, &std_save, &err_save); //FIXME: regarder pourquoi on a des affichages en trop
+        }
         gettimeofday(&start, NULL);
         pid = fork();
         if (pid == 0) {
+            
             exit(launch_test(fw, i, argc, argv));
         }
         wait(&status);
@@ -310,21 +320,39 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         }
         
         float elapsed = ((end.tv_sec - start.tv_sec) * 1000.0) + ((end.tv_usec - start.tv_usec) / 1000.0);
-        if (!fw->silent)
-            printf("[%s] run test \"%s.%s\" in %.2lf ms (%s)\n", 
-                strTermState, 
-                fw->tests[i]->suite, 
-                fw->tests[i]->name, 
-                elapsed, 
-                strTermSig
-            );    
-    }
-    if (fw->cmd != NULL) {
-        int ret = pclose(file);
-        dup2(std_save, STDOUT_FILENO);
-        dup2(err_save, STDERR_FILENO);
-        printf("hello pclose ret = %d\n", ret);
+
+        if (fw->cmd != NULL) {
+            dup2(std_save, STDOUT_FILENO);
+            dup2(err_save, STDERR_FILENO);
+
+            if (pclose(file) == EXIT_SUCCESS) {
+                printf("[%s] run test \"%s.%s\" in %.2lf ms (%s)\n", 
+                    strTermState, 
+                    fw->tests[i]->suite, 
+                    fw->tests[i]->name, 
+                    elapsed, 
+                    strTermSig
+                );
+            } else {
+                printf("[%s] run test \"%s.%s\" in %.2lf ms (status %d)\n", 
+                    "FAILURE", 
+                    fw->tests[i]->suite, 
+                    fw->tests[i]->name, 
+                    elapsed, 
+                    EXIT_FAILURE
+                );
+            }
+        } else {
+            if (!fw->silent)
+                printf("[%s] run test \"%s.%s\" in %.2lf ms (%s)\n", 
+                    strTermState, 
+                    fw->tests[i]->suite, 
+                    fw->tests[i]->name, 
+                    elapsed, 
+                    strTermSig
+                );
+        }
     }
 
     return nbFail;
-}
+}   
