@@ -199,28 +199,6 @@ void alarm_handler (int signal){
     exit(TESTFW_EXIT_TIMEOUT);
 }
 
-int launch_test(struct testfw_t* fw, int i, int argc, char* argv[]) {
-    if (fw == NULL) {
-        perror("Null struct in launch_test ");
-        exit(TESTFW_EXIT_FAILURE);
-    }
-    if (fw->verbose)
-        printf("[DEBUG] Lancement du test : %s.%s avec timeout = %d, silent = %d\n",
-        fw->tests[i]->suite, 
-        fw->tests[i]->name,
-        fw->timeout,
-        fw->silent);
-    
-    if(fw->silent) {
-        close(STDOUT_FILENO);
-        close(STDERR_FILENO);
-    }
-    if (fw->timeout != 0) 
-        alarm(fw->timeout);
-
-    return fw->tests[i]->func(argc, argv);
-}
-
 void redirect_logfile(struct testfw_t* fw) {
     int fd = open(fw->logfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd == -1) {
@@ -255,6 +233,28 @@ FILE* redirect_cmd(struct testfw_t* fw, int* std_save, int* err_save) {
     close(fd); // a faire ??
     pclose(file);
     */
+}
+
+int launch_test(struct testfw_t* fw, int i, int argc, char* argv[]) {
+    if (fw == NULL) {
+        perror("Null struct in launch_test ");
+        exit(TESTFW_EXIT_FAILURE);
+    }
+    if (fw->verbose)
+        printf("[DEBUG] Lancement du test : %s.%s avec timeout = %d, silent = %d\n",
+        fw->tests[i]->suite, 
+        fw->tests[i]->name,
+        fw->timeout,
+        fw->silent);
+    
+    if(fw->silent) {
+        close(STDOUT_FILENO);
+        close(STDERR_FILENO);
+    }
+    if (fw->timeout != 0) 
+        alarm(fw->timeout);
+
+    return fw->tests[i]->func(argc, argv);
 }
 
 int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode_t mode)
