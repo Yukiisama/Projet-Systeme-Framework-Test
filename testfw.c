@@ -22,15 +22,15 @@
 struct testfw_t
 {
     char * program; // filename executable
-    int timeout;
-    char *logfile;  // rediger dans un fichier
-    char *cmd;      // rediriger dans une commande
-    bool silent;    // automatiser , tests par défaut ?
-    bool verbose;   // affichage détailler dans la console (ie debug)
+    int timeout;    // max time to execute a test
+    char *logfile;  // redirect into logfile
+    char *cmd;      // redirect into a cmd (popen used)
+    bool silent;    // delete whole display information
+    bool verbose;   // Use this for debug purpose , display more informations
 
-    struct test_t** tests;
-    unsigned int nbTest; // contient le nombre de tests enregistré
-    unsigned int lenTests; // contient la taille du tableau tests
+    struct test_t** tests; // struct which contain all tests
+    unsigned int nbTest; // nb tests available
+    unsigned int lenTests; // size of test tab
 };
 
 /* ********** FRAMEWORK ********** */
@@ -62,6 +62,7 @@ struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cm
         }
     }
     
+    //Assign struct testfw_t
     new->program = program;
     new->timeout = timeout;
     new->logfile = logfile;
@@ -182,8 +183,8 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
     FILE * file = popen(command, "r");
     
     for (i = 0; fgets(buf, size, file) != NULL; i++) {
-        tok = strtok(buf, "_"); // on récupère le test
-        name = strtok(NULL, "_"); // on récupère le name
+        tok = strtok(buf, "_"); // get the test
+        name = strtok(NULL, "_"); // get the name name
         if ( (ptr = strchr(name, '\n')) != NULL ) *ptr = '\0';
         testfw_register_symb(fw, tok, name);
     }
@@ -194,7 +195,7 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
 }
 
 /* ********** RUN TEST ********** */
-
+//This handler will be used for timeout purpose
 void alarm_handler (int signal){
     exit(TESTFW_EXIT_TIMEOUT);
 }
@@ -257,6 +258,90 @@ FILE* redirect_cmd(struct testfw_t* fw, int* std_save, int* err_save) {
     */
 }
 
+
+int forksmode(struct testfw_t * fw, int argc , char * argv[]){
+        //Variable Declaration
+        struct timeval start, end;  //time struct to mesurate time
+        pid_t pid;
+        int status, termSig, termState, nbFail = 0, std_save, err_save;
+        char *strTermState, strTermSig[64];
+        FILE * file;  //used if cmd != NULL
+        for (int i = 0; i < fw->nbTest; i++) {
+            if (fw->cmd != NULL) {
+                file = redirect_cmd(fw, &std_save, &err_save); 
+            }
+            gettimeofday(&start, NULL);
+            pid = fork();
+            if (pid == 0) {
+                
+                exit(launch_test(fw, i, argc, argv));
+            }
+            wait(&status);
+            gettimeofday(&end, NULL);
+            termSig   = WTERMSIG(status); // sigint which terminate the prog
+            termState = WEXITSTATUS(status); // return code of the child process
+
+            //Fail case 
+            if (termState != TESTFW_EXIT_SUCCESS || termSig != TESTFW_EXIT_SUCCESS) 
+                nbFail++;
+            //if test has been killed
+            if (termSig != TESTFW_EXIT_SUCCESS && termSig != TESTFW_EXIT_FAILURE) {
+                strTermState = "KILLED";
+                snprintf(strTermSig, 64, "signal \"%s\"", strsignal(termSig));
+            } else {
+                //Timeout case 
+                if (termState == TESTFW_EXIT_TIMEOUT) {
+                    if ((end.tv_sec - start.tv_sec) >= fw->timeout) {
+                        strTermState = "TIMEOUT";
+                        snprintf(strTermSig, 64, "status %d", termState);
+                    } else {
+                        strTermState = "KILLED";
+                        snprintf(strTermSig, 64, "signal \"%s\"", strsignal(SIGALRM));
+                    }
+                    //Success, Failure cases
+                } else {
+                    strTermState = (termState == TESTFW_EXIT_SUCCESS) ? "SUCCESS" : "FAILURE"; 
+                    snprintf(strTermSig, 64, "status %d", termState);
+                }
+            }
+            //time elapsed since test has been launched
+            float elapsed = ((end.tv_sec - start.tv_sec) * 1000.0) + ((end.tv_usec - start.tv_usec) / 1000.0);
+
+            if (fw->cmd != NULL) {
+                dup2(std_save, STDOUT_FILENO);
+                dup2(err_save, STDERR_FILENO);
+                //if cmd succeed
+                if (pclose(file) == EXIT_SUCCESS) {
+                    printf("[%s] run test \"%s.%s\" in %.2lf ms (%s)\n", 
+                        strTermState, 
+                        fw->tests[i]->suite, 
+                        fw->tests[i]->name, 
+                        elapsed, 
+                        strTermSig
+                    );
+                } else {
+                    printf("[%s] run test \"%s.%s\" in %.2lf ms (status %d)\n", 
+                        "FAILURE", 
+                        fw->tests[i]->suite, 
+                        fw->tests[i]->name, 
+                        elapsed, 
+                        EXIT_FAILURE
+                    );
+                }
+            } else {
+                if (!fw->silent)
+                    printf("[%s] run test \"%s.%s\" in %.2lf ms (%s)\n", 
+                        strTermState, 
+                        fw->tests[i]->suite, 
+                        fw->tests[i]->name, 
+                        elapsed, 
+                        strTermSig
+                    );
+            }
+        }
+    return nbFail;
+    }
+
 int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode_t mode)
 {
     if (fw == NULL) {
@@ -267,92 +352,16 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         perror("Mode not implemented yet! ");
         exit(TESTFW_EXIT_FAILURE);
     }
-    //déclaration des variables 
-    struct timeval start, end;
-    pid_t pid;
-    int status, termSig, termState, nbFail = 0, std_save, err_save;
-    char *strTermState, strTermSig[64];
     struct sigaction s;
-    FILE * file;
-
     if (fw->logfile != NULL) {
         redirect_logfile(fw);
     }
 
+    //to setup timeout with alarm 
     s.sa_handler = alarm_handler;
     s.sa_flags = 0;
     sigaction(SIGALRM, &s, NULL);
     
-    for (int i = 0; i < fw->nbTest; i++) {
-        if (fw->cmd != NULL) {
-            file = redirect_cmd(fw, &std_save, &err_save); //FIXME: regarder pourquoi on a des affichages en trop
-        }
-        gettimeofday(&start, NULL);
-        pid = fork();
-        if (pid == 0) {
-            
-            exit(launch_test(fw, i, argc, argv));
-        }
-        wait(&status);
-        gettimeofday(&end, NULL);
-        termSig   = WTERMSIG(status); // sigint qui a terminé le prog
-        termState = WEXITSTATUS(status); // code retour du proc fils
 
-        if (termState != TESTFW_EXIT_SUCCESS || termSig != TESTFW_EXIT_SUCCESS) 
-            nbFail++;
-
-        if (termSig != TESTFW_EXIT_SUCCESS && termSig != TESTFW_EXIT_FAILURE) {
-            strTermState = "KILLED";
-            snprintf(strTermSig, 64, "signal \"%s\"", strsignal(termSig));
-        } else {
-            if (termState == TESTFW_EXIT_TIMEOUT) {
-                if ((end.tv_sec - start.tv_sec) >= fw->timeout) {
-                    strTermState = "TIMEOUT";
-                    snprintf(strTermSig, 64, "status %d", termState);
-                } else {
-                    strTermState = "KILLED";
-                    snprintf(strTermSig, 64, "signal \"%s\"", strsignal(SIGALRM));
-                }
-            } else {
-                strTermState = (termState == TESTFW_EXIT_SUCCESS) ? "SUCCESS" : "FAILURE"; 
-                snprintf(strTermSig, 64, "status %d", termState);
-            }
-        }
-        
-        float elapsed = ((end.tv_sec - start.tv_sec) * 1000.0) + ((end.tv_usec - start.tv_usec) / 1000.0);
-
-        if (fw->cmd != NULL) {
-            dup2(std_save, STDOUT_FILENO);
-            dup2(err_save, STDERR_FILENO);
-
-            if (pclose(file) == EXIT_SUCCESS) {
-                printf("[%s] run test \"%s.%s\" in %.2lf ms (%s)\n", 
-                    strTermState, 
-                    fw->tests[i]->suite, 
-                    fw->tests[i]->name, 
-                    elapsed, 
-                    strTermSig
-                );
-            } else {
-                printf("[%s] run test \"%s.%s\" in %.2lf ms (status %d)\n", 
-                    "FAILURE", 
-                    fw->tests[i]->suite, 
-                    fw->tests[i]->name, 
-                    elapsed, 
-                    EXIT_FAILURE
-                );
-            }
-        } else {
-            if (!fw->silent)
-                printf("[%s] run test \"%s.%s\" in %.2lf ms (%s)\n", 
-                    strTermState, 
-                    fw->tests[i]->suite, 
-                    fw->tests[i]->name, 
-                    elapsed, 
-                    strTermSig
-                );
-        }
-    }
-
-    return nbFail;
+    return forksmode(fw,argc,argv);
 }   
