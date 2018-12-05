@@ -196,16 +196,27 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
 /* ********** RUN TEST ********** */
 
 void alarm_handler (int signal){
-    exit(124);
+    exit(TESTFW_EXIT_TIMEOUT);
 }
 
 int launch_test(struct testfw_t* fw, int i, int argc, char* argv[]) {
-    if (fw->timeout != 0) 
-        alarm(fw->timeout);
-    if (fw->silent) {
+    if (fw == NULL) {
+        perror("Null struct in launch_test ");
+        exit(TESTFW_EXIT_FAILURE);
+    }
+    if (fw->verbose)
+        printf("[DEBUG] Lancement du test : %s.%s avec timeout = %d, silent = %d\n",
+        fw->tests[i]->suite, 
+        fw->tests[i]->name,
+        fw->timeout,
+        fw->silent);
+    else {
         close(STDOUT_FILENO);
         close(STDERR_FILENO);
     }
+    if (fw->timeout != 0) 
+        alarm(fw->timeout);
+
     return fw->tests[i]->func(argc, argv);
 }
 
@@ -229,7 +240,10 @@ void redirect_cmd(struct testfw_t* fw) {
     int fd = fileno(file);
     dup2(fd, STDOUT_FILENO);
     dup2(fd, STDERR_FILENO);
-    //close(fd) // a faire ??
+    /*
+    close(fd); // a faire ??
+    pclose(file);
+    */
 }
 
 int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode_t mode)
@@ -272,13 +286,14 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         termSig   = WTERMSIG(status); // sigint qui a terminé le prog
         termState = WEXITSTATUS(status); // code retour du proc fils
 
-        if (termState != 0 || termSig != 0) nbFail++;
+        if (termState != TESTFW_EXIT_SUCCESS || termSig != TESTFW_EXIT_SUCCESS) 
+            nbFail++;
 
-        if (termSig != 0 && termSig != 1) {
+        if (termSig != TESTFW_EXIT_SUCCESS && termSig != TESTFW_EXIT_FAILURE) {
             strTermState = "KILLED";
             snprintf(strTermSig, 64, "signal \"%s\"", strsignal(termSig));
         } else {
-            if (termState == 124) {
+            if (termState == TESTFW_EXIT_TIMEOUT) {
                 if ((end.tv_sec - start.tv_sec) >= fw->timeout) {
                     strTermState = "TIMEOUT";
                     snprintf(strTermSig, 64, "status %d", termState);
@@ -287,7 +302,7 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
                     snprintf(strTermSig, 64, "signal \"%s\"", strsignal(SIGALRM));
                 }
             } else {
-                strTermState = (termState == 0) ? "SUCCESS" : "FAILURE"; 
+                strTermState = (termState == TESTFW_EXIT_SUCCESS) ? "SUCCESS" : "FAILURE"; 
                 snprintf(strTermSig, 64, "status %d", termState);
             }
         }
@@ -300,10 +315,11 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
                 fw->tests[i]->name, 
                 elapsed, 
                 strTermSig
-            );
-        
-        //if (fw->cmd != NULL)
-            //pclose(file);
+            );    
+    }
+    if (fw->cmd != NULL) {
+        int ret = pclose(file);
+        printf("hello pclose ret = %d\n", ret);
     }
 
     return nbFail;
