@@ -254,8 +254,9 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         redirect_logfile(fw);
     }
     if (fw->cmd != NULL) {
-        redirect_cmd(fw);
+        redirect_cmd(fw); //FIXME: regarder pourquoi on a des affichages en trop
     }
+
     s.sa_handler = alarm_handler;
     s.sa_flags = 0;
     sigaction(SIGALRM, &s, NULL);
