@@ -231,12 +231,14 @@ void redirect_logfile(struct testfw_t* fw) {
     close(fd);
 }
 
-void redirect_cmd(struct testfw_t* fw) {
+void redirect_cmd(struct testfw_t* fw, int* std_save, int* err_save) {
     FILE * file = popen(fw->cmd, "w");
     if (file == NULL) {
         perror("Can't execute command ");
         exit(TESTFW_EXIT_FAILURE);  
     }
+    *std_save = dup(STDOUT_FILENO);
+    *err_save = dup(STDERR_FILENO);
     int fd = fileno(file);
     dup2(fd, STDOUT_FILENO);
     dup2(fd, STDERR_FILENO);
@@ -259,16 +261,16 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
     //déclaration des variables 
     struct timeval start, end;
     pid_t pid;
-    int status, termSig, termState, nbFail = 0;
+    int status, termSig, termState, nbFail = 0, std_save, err_save;
     char *strTermState, strTermSig[64];
     struct sigaction s;
     FILE * file = stdout;
 
+    if (fw->cmd != NULL) {
+        redirect_cmd(fw, &std_save, &err_save); //FIXME: regarder pourquoi on a des affichages en trop
+    }
     if (fw->logfile != NULL) {
         redirect_logfile(fw);
-    }
-    if (fw->cmd != NULL) {
-        redirect_cmd(fw); //FIXME: regarder pourquoi on a des affichages en trop
     }
 
     s.sa_handler = alarm_handler;
@@ -319,6 +321,8 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
     }
     if (fw->cmd != NULL) {
         int ret = pclose(file);
+        dup2(std_save, STDOUT_FILENO);
+        dup2(err_save, STDERR_FILENO);
         printf("hello pclose ret = %d\n", ret);
     }
 
