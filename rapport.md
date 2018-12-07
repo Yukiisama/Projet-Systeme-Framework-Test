@@ -67,9 +67,9 @@ On remarque que chaque fonction est dépendante de la précédente (```test_fw_r
 
 # Partie B : exécution des tests
 
-La partie B traite de l’exécution des tests enregistrés avec les fonctions précédentes.
-Par soucis de lisibilité du code nous avons découpé la fonction qui lance tout les tests en 3 fonctions.
-```redirect_logfile``` qui va s'occuper de mettre en place la redirection dans le fichier voulu (c'est à dire dans le cas où le champ ```logfile``` de notre structure est initialisé)
+La partie B traite de l’exécution des tests enregistrés avec les fonctions précédentes.\
+Par soucis de lisibilité du code nous avons découpé la fonction qui lance tout les tests en 3 fonctions.\
+```redirect_logfile``` qui va s'occuper de mettre en place la redirection dans le fichier voulu (c'est à dire dans le cas où le champ ```logfile``` de notre structure est initialisé)\
 ```redirect_cmd```qui va s'occuper de la redirection dans la commande voulu, cette fonction effectue une sauvegarde des sorties standard (```STDOUT``` et ```STDERR```) afin de pouvoir les récupérer une fois la redirection terminée.
-Ces redirections se font a l'aide des appels système ```dup2```et la sauvegarde avec ```dup```.
+Ces redirections se font a l'aide des appels système ```dup2```et la sauvegarde avec ```dup```.\
 ```launch_test```qui va lancer le test en accédant à la case de ```tests``` correspondant à l'indice passé en paramètre, en outre il prend également
