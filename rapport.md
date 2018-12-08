@@ -68,8 +68,9 @@ On remarque que chaque fonction est dépendante de la précédente (```test_fw_r
 # Partie B : exécution des tests
 
 La partie B traite de l’exécution des tests enregistrés avec les fonctions précédentes.\
-Par soucis de lisibilité du code nous avons découpé la fonction qui lance tout les tests en 3 fonctions.\
-```redirect_logfile``` qui va s'occuper de mettre en place la redirection dans le fichier voulu (c'est à dire dans le cas où le champ ```logfile``` de notre structure est initialisé)\
+Par soucis de lisibilité du code nous avons découpé la fonction qui lance tout les tests en 4 fonctions.\
+```redirect_logfile``` qui va s'occuper de mettre en place la redirection dans le fichier voulu (c'est à dire dans le cas où le champ ```logfile``` de notre structure est initialisé).\
 ```redirect_cmd```qui va s'occuper de la redirection dans la commande voulu, cette fonction effectue une sauvegarde des sorties standard (```STDOUT``` et ```STDERR```) afin de pouvoir les récupérer une fois la redirection terminée.
 Ces redirections se font a l'aide des appels système ```dup2```et la sauvegarde avec ```dup```.\
-```launch_test```qui va lancer le test en accédant à la case de ```tests``` correspondant à l'indice passé en paramètre, en outre il prend également
+```launch_test```qui va lancer le test en accédant à la case de ```tests``` correspondant à l'indice passé en paramètre, en outre il prend en paramètre ```argc``` et ```argv``` qui correspondent aux nombre d'argument et au tableau d'argument de la fonction à tester (à ne pas confondre avec ```argc``` et ```argv``` du ```main```, cette fonction setup également le ```timeout```pour la fonction qui va être lancer.\
+```launch_suite_test```qui est la fonctions qui s'occupe de lancer une "séquence" de tests, elle prend en paramètre ```argc```, ```argv```, ```start``` et ```end```, ces deux derniers correspondent aux indices du premier et du dernier test de la séquence à lancer. Cette fonction est surtout utile pour le mode FORKP qui va lancer les tests en parallele.
