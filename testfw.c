@@ -348,7 +348,7 @@ int launch_suite_test(struct testfw_t *fw, int start, int end, int argc, char *a
             exit(launch_test(fw, i, argc, argv));
         }
         wait(&status);
-        gettimeofday(&time_end, NULL)    // time_end is the ending time of the i-th test
+        gettimeofday(&time_end, NULL);   // time_end is the ending time of the i-th test
         termSig = WTERMSIG(status);      // sigint which terminate the prog
         termState = WEXITSTATUS(status); // return code of the child process
 
