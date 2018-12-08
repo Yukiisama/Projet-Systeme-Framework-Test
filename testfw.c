@@ -155,11 +155,11 @@ struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name
     testfw_func_t func;
     void * handle;
 
-    handle = dlopen(fw->program, RTLD_LAZY);
+    handle = dlopen(NULL, RTLD_LAZY);
     * (void **)(&func) = dlsym(handle, suitename);
-    /*if (handle)   
+    if (handle)   
         dlclose(handle);
-    */
+    
     return testfw_register_func(fw, suite, name, func);
 }
 
