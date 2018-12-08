@@ -34,17 +34,7 @@ struct testfw_t
 };
 
 /* ********** FRAMEWORK ********** */
-/**
- * @brief initialize test framework
- *
- * @param program the filename of this executable
- * @param timeout the time limits (in sec.) for each test, else 0.
- * @param logfile the file in which to redirect all test outputs (standard & error), else NULL
- * @param cmd a shell command in which to redirect all test outputs (standard & erro),else NULL
- * @param silent if true, the test framework runs in silent mode
- * @param verbose if true, the test framework runs in verbose mode
- * @return a pointer on a new test framework structure
- */
+
 struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cmd, bool silent, bool verbose)
 {
    timeout = ( timeout < 0 ) ? 0 : timeout;
@@ -85,11 +75,7 @@ struct testfw_t *testfw_init(char *program, int timeout, char *logfile, char *cm
 
     return new;
 }
-/**
- * @brief finalize the test framework and free all memory
- *
- * @param fw the test framework to be freed
- */
+
 void testfw_free(struct testfw_t *fw)
 {
     if (fw != NULL) {
@@ -104,23 +90,12 @@ void testfw_free(struct testfw_t *fw)
     }
     free(fw);
 }
-/**
- * @brief get number of registered tests
- *
- * @param fw the test framework
- * @return the number of registered tests
- */
+
 int testfw_length(struct testfw_t *fw)
 {
     return ( fw != NULL ) ? fw->nbTest : -1;
 }
-/**
- * @brief get a registered test
- *
- * @param fw the test framework
- * @param k index of the test to get (k >=0)
- * @return a pointer on the k-th registered test
- */
+
 struct test_t *testfw_get(struct testfw_t *fw, int k)
 {
     if ( fw != NULL && fw->tests != NULL ) {
@@ -131,15 +106,6 @@ struct test_t *testfw_get(struct testfw_t *fw, int k)
 
 /* ********** REGISTER TEST ********** */
 
-/**
- * @brief register a single test function
- *
- * @param fw the test framework
- * @param suite a suite name in which to register this test
- * @param name a test name
- * @param func a test function
- * @return a pointer to the structure, that registers this test
- */
 struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name, testfw_func_t func)
 {
     if (fw == NULL || fw->tests == NULL){
@@ -171,14 +137,7 @@ struct test_t *testfw_register_func(struct testfw_t *fw, char *suite, char *name
     
     return fw->tests[fw->nbTest-1];
 }
-/**
- * @brief register a single test function named "<suite>_<name>""
- *
- * @param fw the test framework
- * @param suite a suite name in which to register this test
- * @param name a test name
- * @return a pointer to the structure, that registers this test
- */
+
 struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name)
 {
     if (fw == NULL || fw->tests ==NULL){
@@ -203,13 +162,7 @@ struct test_t *testfw_register_symb(struct testfw_t *fw, char *suite, char *name
     */
     return testfw_register_func(fw, suite, name, func);
 }
-/**
- * @brief register all test functions named "<suite>_*"
- *
- * @param fw the test framework
- * @param suite a suite name in which to register these tests
- * @return the number of new registered tests
- */
+
 int testfw_register_suite(struct testfw_t *fw, char *suite)
 {
     if ( fw == NULL || fw->tests == NULL){
@@ -327,15 +280,6 @@ int launch_test(struct testfw_t* fw, int i, int argc, char* argv[]) {
     return fw->tests[i]->func(argc, argv);
 }
 
-/**
- * @brief run all registered tests
- *
- * @param fw the test framework
- * @param argc the number of arguments passed to each test function
- * @param argv the array of arguments passed to each test function
- * @param mode the execution mode in which to run each test function
- * @return the number of tests that fail
- */
 int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode_t mode)
 {
     if (fw == NULL) {
