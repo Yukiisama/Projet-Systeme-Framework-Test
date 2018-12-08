@@ -200,7 +200,7 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
  *
  * @param Signal on which we specify the action ( SIG_ALRM)
  */
-void alarm_handler (int signal){
+void alarm_handler(int signal){
     exit(TESTFW_EXIT_TIMEOUT);
 }
 
@@ -298,7 +298,6 @@ int launch_suite_test(struct testfw_t* fw, int start, int end, int argc, char* a
     sigaction(SIGALRM, &s, NULL);
 
     if (fw->logfile != NULL) {
-        //FIXME: regarder pourquoi les tests apparaissent plusieurs fois
         redirect_logfile(fw);
     }
 
@@ -354,6 +353,8 @@ int launch_suite_test(struct testfw_t* fw, int start, int end, int argc, char* a
             time, 
             strTermSig
         );
+        fflush(stdout);
+        fflush(stderr);
     }
     return nbFail;
 }
