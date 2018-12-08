@@ -512,6 +512,7 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
 
             if (fw->cmd != NULL)
             {
+				
                 file = redirect_cmd(fw, &std_save, &err_save);
             }
             //redirect
@@ -549,7 +550,7 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
                 }
                 break;
             }
-            printf(" %d ; %d \n", termSig, termState);
+            
             gettimeofday(&time_end, NULL); // time_end is the ending time of the i-th test
             //if one test failed
 
@@ -595,7 +596,7 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
             fflush(stdout);
             fflush(stderr);
 
-            if (result == 1 && termState != TESTFW_EXIT_SUCCESS || termSig != TESTFW_EXIT_SUCCESS)
+            if (result == 1 && (termState != TESTFW_EXIT_SUCCESS || termSig != TESTFW_EXIT_SUCCESS))
             {
                 //In the nofork mode, each test is runned directly as a function call (without fork).
                 // As a consequence, the first test that fails will interrupt all the following.
