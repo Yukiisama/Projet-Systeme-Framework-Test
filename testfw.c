@@ -294,6 +294,7 @@ int launch_suite_test(struct testfw_t* fw, int start, int end, int argc, char* a
 
     s.sa_handler = alarm_handler;
     s.sa_flags = 0;
+    sigemptyset(&s.sa_mask);
     sigaction(SIGALRM, &s, NULL);
 
     if (fw->logfile != NULL) {
