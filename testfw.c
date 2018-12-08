@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <setjmp.h>
 
 #include "testfw.h"
 
@@ -200,7 +201,7 @@ int testfw_register_suite(struct testfw_t *fw, char *suite)
     for (i = 0; fgets(buf, size, file) != NULL; i++)
     {
         tok = strtok(buf, "_");   // We get the test
-        name = strtok(NULL, "_"); // We get the name 
+        name = strtok(NULL, "_"); // We get the name
         if ((ptr = strchr(name, '\n')) != NULL)
             *ptr = '\0';
         testfw_register_symb(fw, tok, name);
@@ -289,10 +290,10 @@ int launch_test(struct testfw_t *fw, int i, int argc, char *argv[])
     }
     if (fw->verbose)
         printf("[DEBUG] Lancement du test : %s.%s avec timeout = %d, silent = %d\n",
-            fw->tests[i]->suite,
-            fw->tests[i]->name,
-            fw->timeout,
-            fw->silent);
+               fw->tests[i]->suite,
+               fw->tests[i]->name,
+               fw->timeout,
+               fw->silent);
 
     if (fw->silent)
     {
@@ -396,15 +397,57 @@ int launch_suite_test(struct testfw_t *fw, int start, int end, int argc, char *a
         //time elapsed since test has been launched
         time = ((time_end.tv_sec - time_start.tv_sec) * 1000.0) + ((time_end.tv_usec - time_start.tv_usec) / 1000.0);
         printf("[%s] run test \"%s.%s\" in %.2lf ms (%s)\n",
-            strTermState,
-            fw->tests[i]->suite,
-            fw->tests[i]->name,
-            time,
-            strTermSig);
+               strTermState,
+               fw->tests[i]->suite,
+               fw->tests[i]->name,
+               time,
+               strTermSig);
         fflush(stdout);
         fflush(stderr);
     }
     return nbFail;
+}
+
+/**************************VARIABLES WE NEED TO BE GLOBAL ******************************/
+jmp_buf buff;
+int termSig, termState;
+int state_timeout = 0;
+int state_kill = 0;
+int state_segv = 0;
+/********************************************************/
+/*
+ * @brief This handler will be used defining new actions avoiding segfault etc to terminate well the test.
+ * Use also for timeout purpose
+ * @param Signal on which we specify the action ( SIG_ALRM)
+ */
+void handler_nofork(int signal)
+{
+    switch (signal)
+    {
+
+    case 6:
+        termState = TESTFW_EXIT_FAILURE;
+        state_kill = 1;
+        siglongjmp(buff, 1);
+        break;
+    case 7:
+        termState = TESTFW_EXIT_FAILURE;
+        siglongjmp(buff, 1);
+        break;
+    case 11:
+        termState = TESTFW_EXIT_FAILURE;
+        state_segv = 1;
+        siglongjmp(buff, 1);
+        break;
+    case 14:
+        termState = TESTFW_EXIT_TIMEOUT;
+        state_timeout = 1;
+        siglongjmp(buff, 1);
+        break;
+    default:
+        termState = TESTFW_EXIT_FAILURE;
+        break;
+    }
 }
 
 int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode_t mode)
@@ -414,9 +457,15 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
         perror("Null pointer ");
         exit(TESTFW_EXIT_FAILURE);
     }
-
+    struct timeval time_start, time_end; //time struct to mesurate time
+    double time;
+    int result, std_save, err_save;
+    ;
+    char *strTermState, strTermSig[64];
     int total_fail = 0, status;
     pid_t pid;
+    struct sigaction s_nofork;
+    FILE *file; //used if cmd != NULL
 
     switch (mode)
     {
@@ -440,6 +489,120 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
             if (WEXITSTATUS(status) != TESTFW_EXIT_SUCCESS)
                 total_fail += 1;
         }
+        break;
+    case TESTFW_NOFORK:
+
+        s_nofork.sa_flags = SA_RESTART;
+        s_nofork.sa_handler = handler_nofork;
+        sigemptyset(&s_nofork.sa_mask);
+        if (fw->logfile != NULL)
+        {
+            redirect_logfile(fw);
+        }
+        //Masqued all signals
+        for (int i = 0; i < NSIG; i++)
+        {
+            sigaction(i, &s_nofork, NULL);
+        }
+        // run each test until a test failed
+        for (int i = 0; i < fw->nbTest; i++)
+        {
+            //init time start
+            gettimeofday(&time_start, NULL);
+
+            if (fw->cmd != NULL)
+            {
+                file = redirect_cmd(fw, &std_save, &err_save);
+            }
+            //redirect
+            if (fw->cmd != NULL)
+            {
+                dup2(std_save, STDOUT_FILENO);
+                dup2(err_save, STDERR_FILENO);
+            }
+            // sigsetjmp == 0 until siglongjmp call , i.e when a test failed
+            if (sigsetjmp(buff, 1) == 0)
+                result = launch_test(fw, i, argc, argv);
+            //We already execute the test and conclude it was a fail , we print final informations and leave there
+            else
+            {
+                result = 1;
+            }
+            switch (result)
+            {
+            case 0:
+                termSig = TESTFW_EXIT_SUCCESS;
+                termState = TESTFW_EXIT_SUCCESS;
+                break;
+            default:
+                termSig = TESTFW_EXIT_FAILURE;
+                if (state_timeout)
+                    termState = TESTFW_EXIT_TIMEOUT;
+                else if (state_kill)
+                    termSig = 6;
+                else if (state_segv)
+                    termSig = 11;
+                else
+                {
+                    termSig = TESTFW_EXIT_FAILURE;
+                    termState = TESTFW_EXIT_FAILURE;
+                }
+                break;
+            }
+            printf(" %d ; %d \n", termSig, termState);
+            gettimeofday(&time_end, NULL); // time_end is the ending time of the i-th test
+            //if one test failed
+
+            if (termState != TESTFW_EXIT_SUCCESS || termSig != TESTFW_EXIT_SUCCESS)
+                total_fail++;
+            //if test has been killed
+            if (termSig != TESTFW_EXIT_SUCCESS && termSig != TESTFW_EXIT_FAILURE)
+            {
+                strTermState = "KILLED";
+                snprintf(strTermSig, 64, "signal \"%s\"", strsignal(termSig));
+            }
+            else
+            {
+                if (termState == TESTFW_EXIT_TIMEOUT)
+                {
+                    if ((time_end.tv_sec - time_start.tv_sec) >= fw->timeout)
+                    {
+                        strTermState = "TIMEOUT";
+                        snprintf(strTermSig, 64, "status %d", termState);
+                    }
+                    else
+                    {
+                        strTermState = "KILLED";
+                        snprintf(strTermSig, 64, "signal \"%s \"", strsignal(SIGALRM));
+                    }
+                }
+                //time elapsed since test has been launched
+                else if (fw->cmd == NULL)
+                {
+                    strTermState = (termState == TESTFW_EXIT_SUCCESS) ? "SUCCESS" : "FAILURE";
+                    snprintf(strTermSig, 64, "status %d", termState);
+                }
+            }
+
+            //time elapsed since test has been launched
+            time = ((time_end.tv_sec - time_start.tv_sec) * 1000.0) + ((time_end.tv_usec - time_start.tv_usec) / 1000.0);
+            printf("[%s] run test \"%s.%s\" in %.2lf ms (%s)\n",
+                   strTermState,
+                   fw->tests[i]->suite,
+                   fw->tests[i]->name,
+                   time,
+                   strTermSig);
+            fflush(stdout);
+            fflush(stderr);
+
+            if (result == 1 && termState != TESTFW_EXIT_SUCCESS || termSig != TESTFW_EXIT_SUCCESS)
+            {
+                //In the nofork mode, each test is runned directly as a function call (without fork).
+                // As a consequence, the first test that fails will interrupt all the following.
+                return total_fail;
+            }
+        }
+
         break;
     default:
         printf("no\n");
