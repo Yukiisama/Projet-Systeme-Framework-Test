@@ -77,10 +77,12 @@ Ces redirections se font a l'aide des appels système ```dup2```et la sauvegarde
 
 Le mode séquentiel de ```testfw_run_all``` se contente d'appeler la fonction ```launch_suite_test``` avec comme indice de debut 0 et comme indice de fin ```nbTest```afin de lancer tout les tests ajouté dans la structure
 
-Le problème que nous avons rencontré dans cette partie était lié à la redirection sur la commande externe. Il s'agissait d'un problème de compréhension du sujet. A l'origine, avant de résoudre notre problème la redirection sur commande empéchait CTest connaitre l'éxécution des tests mettant tout d'office a ```[FAILURE]``` avec comme message ```Failed  Required regular expression not found.Regex```
+Le problème que nous avons rencontré dans cette partie était lié à la redirection sur la commande externe. A l'origine, avant de résoudre notre problème la redirection sur commande empéchait CTest connaitre l'éxécution des tests mettant tout d'office a ```[FAILURE]``` avec comme message ```Failed  Required regular expression not found.Regex```.
+Il s'agissait d'un problème de compréhension du sujet, donc pour le résoudre nous avons demander des précisions à des camarades et à des professeurs.
 
 # BONUS : 
 
+La première question du bonus était de faire le tourner les tests en parallèles. Pour cela nous avons juste rajouter a notre fonction ```testfw_run_all``` le cas où le parallèle était demandé (```FORKP```). Ce cas engendre autant de fork qu'il y à de tests, chaque processus fils effectue donc un test, il suffit donc d'appeler une fois notre fonction.
 
 
 |FONCTIONNALITÉS  |DIFFICULTÉ  |SCORE (/10)|
