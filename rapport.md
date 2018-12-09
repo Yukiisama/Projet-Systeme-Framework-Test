@@ -78,6 +78,7 @@ Ces redirections se font a l'aide des appels système ```dup2```et la sauvegarde
 Le mode séquentiel de ```testfw_run_all``` se contente d'appeler la fonction ```launch_suite_test``` avec comme indice de debut 0 et comme indice de fin ```nbTest```afin de lancer tout les tests ajouté dans la structure
 
 Le problème que nous avons rencontré dans cette partie était lié à la redirection sur la commande externe. Il s'agissait d'un problème de compréhension du sujet. A l'origine, avant de résoudre notre problème la redirection sur commande empéchait CTest connaitre l'éxécution des tests mettant tout d'office a ```[FAILURE]``` avec comme message ```Failed  Required regular expression not found.Regex```
+
 #BONUS : 
 
 
