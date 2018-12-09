@@ -470,7 +470,7 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
     switch (mode)
     {
     // Each test process sequentially
-    case TESTFW_FORKS:
+    default
         total_fail = launch_suite_test(fw, 0, fw->nbTest, argc, argv);
         break;
     // Parallel execution
@@ -604,9 +604,6 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
             }
         }
 
-        break;
-    default:
-        printf("no\n");
         break;
     }
 
