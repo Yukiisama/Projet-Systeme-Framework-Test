@@ -52,7 +52,7 @@ Pour la libération de la mémoire (```testfw_free```) on doit libérer les case
 
 ## Fonction d'ajout de tests
 
-Avant de pouvoir implémenter les fonctions d'ajout de tests nous avons du coder deux fonctions simples :
+Avant de pouvoir implémenter les fonctions d'ajout de tests nous avons dû coder deux fonctions simples :
 - ```testfw_length``` qui renvoie juste le nombre de test qu'on peut récupérer dans notre structure avec ```fw->nbTest```
 - ```testfw_get``` qui renvoie un pointeur vers un test enregistré grâce à son indice mis en paramètre, il suffit d'aller le récupérer dans le tableau de la structure avec ```fw->tests[k]``` avec k l'indice du test voulu.
 
@@ -72,13 +72,13 @@ Par soucis de lisibilité du code nous avons découpé la fonction qui lance tou
 ```redirect_logfile``` qui va s'occuper de mettre en place la redirection dans le fichier voulu (c'est à dire dans le cas où le champ ```logfile``` de notre structure est initialisé).\
 
 ```redirect_cmd```qui va s'occuper de la redirection dans la commande voulu, cette fonction effectue une sauvegarde des sorties standard (```STDOUT``` et ```STDERR```) afin de pouvoir les récupérer une fois la redirection terminée.
-Ces redirections se font a l'aide des appels système ```dup2```et la sauvegarde avec ```dup```.\
+Ces redirections se font a l'aide des appels système ```dup2```et la sauvegarde avec ```dup```.
 
-```launch_test```qui va lancer le test en accédant à la case de ```tests``` correspondant à l'indice passé en paramètre, en outre il prend en paramètre ```argc``` et ```argv``` qui correspondent aux nombre d'argument et au tableau d'argument de la fonction à tester (à ne pas confondre avec ```argc``` et ```argv``` du ```main```, cette fonction setup également le ```timeout```pour la fonction qui va être lancer.\
+```launch_test```qui va lancer le test en accédant à la case de ```tests``` correspondant à l'indice passé en paramètre, en outre il prend en paramètre ```argc``` et ```argv``` qui correspondent aux nombre d'argument et au tableau d'argument de la fonction à tester (à ne pas confondre avec ```argc``` et ```argv``` du ```main```, cette fonction setup également le ```timeout```pour la fonction qui va être lancer.
 
 ```launch_suite_test```qui est la fonctions qui s'occupe de lancer une "séquence" de tests, elle prend en paramètre ```argc```, ```argv```, ```start``` et ```end```, ces deux derniers correspondent aux indices du premier et du dernier test de la séquence à lancer. Cette fonction est surtout utile pour le mode FORKP qui va lancer les tests en parallele. Cette fonction commence par effectuer un ```sigaction``` qui va traiter le signal d'alarme du timeout, ensuite on vérifie si une redirection vers le logfile est demandée. Dans la boucle principale on lance les tests de allant de l'indice ```start``` a ```end``` à l'aide de la fonction précédente et nous recupérrons le temps d'éxecution a l'aide d'appels des fonctions ```gettimeofday``` avant et après le test. On récupère le signal de fin et le code retour qui vont nous indiqué si le test à réussi ou non, nous donnant également plus de précision (```TIMEOUT```, ```KILLED```, ```SUCCESS``` etc...), on affiche ensuite les résultats des tests sous la forme suivante ```[TermState] run test "suite.name" in time ms``` avec. Cette fonction renvoie le nombre de tests loupé dans la séquence lancée.
 
-Le mode séquentiel de ```testfw_run_all``` se contente d'appeler la fonction ```launch_suite_test``` avec comme indice de debut 0 et comme indice de fin ```nbTest```afin de lancer tout les tests ajouté dans la structure
+Le mode séquentiel de ```testfw_run_all``` se contente d'appeler la fonction ```launch_suite_test``` avec comme indice de debut 0 et comme indice de fin ```nbTest```afin de lancer tout les tests ajouté dans la structure.
 
 Le principal problème que nous avons rencontré dans cette partie était lié à la redirection sur la commande externe. A l'origine, avant de résoudre notre problème la redirection sur commande empéchait CTest connaitre l'éxécution des tests mettant tout d'office a ```[FAILURE]``` avec comme message ```Failed  Required regular expression not found.Regex```.
 Il s'agissait d'un problème de compréhension du sujet, donc pour le résoudre nous avons demander des précisions à des camarades et à des professeurs.
