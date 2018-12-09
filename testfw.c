@@ -583,6 +583,12 @@ int testfw_run_all(struct testfw_t *fw, int argc, char *argv[], enum testfw_mode
                     strTermState = (termState == TESTFW_EXIT_SUCCESS) ? "SUCCESS" : "FAILURE";
                     snprintf(strTermSig, 64, "status %d", termState);
                 }
+                else
+				{
+                int ret = pclose(file);
+                strTermState = (!ret) ? "SUCCESS" : "FAILURE";
+                snprintf(strTermSig, 64, "status %d", WEXITSTATUS(ret));
+				}
             }
 
             //time elapsed since test has been launched
