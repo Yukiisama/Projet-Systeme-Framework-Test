@@ -1,6 +1,7 @@
+## BROCARD Thimotée GERARDIN Xavier PERIGNON Alexis
 
 # Présentation du Projet
-
+<div style='text-align: justify;'>
 Le but de ce projet est de développer un framework de tests à partir de nos compétences en programmation système.
 Le langage utilisé est donc le C.
 
@@ -8,6 +9,9 @@ Le projet est découpé en deux parties et un bonus.
 La première partie (Partie A) consiste à l'implémentation de la structure qui contiendra nos tests ainsi que diverses options, les fonctions d'initialisation/allocation et de libération de la structure et les fonctions d'ajouts de tests.
 La deuxième partie (Partie B) consiste elle à l'implémentation de la fonction permettant de lancer l’exécution de tous les tests enregistrés dans la structure.
 Le bonus nous demandant des modifications de la partie B pour executer les tests en parallèle ou sans aucun ```fork```.
+
+
+<div style="page-break-after: always;"></div>
 
 # Partie A : ajout des tests
 
@@ -65,6 +69,8 @@ L'ajout de tests se fait a partir de trois fonctions différentes :
 
 On remarque que chaque fonction est dépendante de la précédente (```test_fw_register_suite``` a besoin de ```testfw_register_symb``` qui a besoin de ```testfw_register_func```) le moindre problème se répercute donc sur une autre fonction. Notre groupe a eu un problème avec ```test_fw_register_suite``` qui semblait bien enregistrer la fonction dans la boucle mais une fois sortie, seul la dernière fonction était enregistrer (et dans toute les case de notre tableau ```tests```) ce problème était causé par le fait qu'on mettait tout simplement le pointeur du nom du test directement dans le champ sans en faire de copie, donc à la fin de la boucle toute les cases pointaient vers le même nom causant ainsi notre problème. Nous avons résolu notre problème en créant un pointeur sur une chaîne de caractère ou on à copié le nom et en mettant ce nouveau pointeur à la place.  
 
+<div style="page-break-after: always;"></div>
+
 # Partie B : exécution des tests
 
 La partie B traite de l’exécution des tests enregistrés avec les fonctions précédentes.\
@@ -89,6 +95,11 @@ La première question du bonus était de faire le tourner les tests en parallèl
 
 La seconde question du bonus était de faire un mode ou aucun ```fork```n'était fait (mode ```NOFORK```) ;  Le mode ```NOFORK``` que nous avons implementé exécute les tests enregistrés jusqu'au premier échec. Il n'utilise aucun ```fork``` et utilise les mécanismes ```sigaction``` pour masquer les signaux importants ainsi que ```siglongjump``` et ```sigsetjump``` pour contourner les ```segfaults```, ```alarms``` etc... qui auraient tué notre programme. Nous avons compris du sujet que le mode devait s'arrêter au premier échec comme préciser dans le fichier Readme.md : ```In the nofork mode [...] the first test that fails will interrupt all the following```
 
+<div style="page-break-after: always;"></div>
+
+# ANNEXE : 
+
+## Grille d'auto évaluation
 
 |FONCTIONNALITÉS                                        |DIFFICULTÉ  |SCORE (/10)|
 |:------------------------------------------------------|:-----------|:---------:|
@@ -106,3 +117,6 @@ La seconde question du bonus était de faire un mode ou aucun ```fork```n'était
 |**Bonus :**                                            |            |           |
 |- testfw_run_all en mode FORKP (avec les options)      |+++         |10         |
 |- testfw_run_all en mode NOFORK (avec les options)     |+++         |10         |
+
+
+</div>
