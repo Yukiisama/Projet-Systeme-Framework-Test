@@ -47,7 +47,7 @@ En outre :
 - Le champ ```lenTest``` est la taille actuelle du tableau afin de pouvoir le realloc quand sa capacité n'est plus suffisante.
 
 /!\ ```logfile``` et ```timeout``` sont deux options exclusives on ne doit pas mettre les deux en même temps sous peine d'avoir un comportement indéfini. /!\
-/!\ ```silent```et ```verbose``` sont "concurrent" si les deux sont mis a ```True```, ```silent``` supprime l'affichage et domine ```verbose```. /!\
+/!\ ```silent```et ```verbose``` sont "concurrent" si les deux sont mis a ```True```, ```silent``` supprime l'affichage et domine ```verbose```. /!\ \
 
 ---
 Pour l'allocation de la mémoire et l'initialisation de la structure de tests (```testfw_init```)nous avons dû allouer manuellement : la structure en elle même, le tableau étant donné qu'on à choisi un tableau dynamique (```tests```) afin de ne pas avoir de capacité "finie" et les "cases" du tableau contenant la structure```test_t``` qui nous est fournie, on a ensuite juste à ajouter les paramètre dans les champs de notre structure.
