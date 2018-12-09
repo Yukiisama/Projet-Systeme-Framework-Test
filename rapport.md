@@ -113,10 +113,10 @@ La seconde question du bonus était de faire un mode ou aucun ```fork``` n'étai
 |- testfw_run_all en mode FORKS (sans les options)      |++          |10         |
 |- option timeout                                       |++          |10         |
 |- option redirection vers logfile                      |++          |10         |
-|- option redirection vers commande externe             |+++         |10         |
+|- option redirection vers commande externe             |+++         |9          |
 |**Bonus :**                                            |            |           |
-|- testfw_run_all en mode FORKP (avec les options)      |+++         |10         |
-|- testfw_run_all en mode NOFORK (avec les options)     |+++         |10         |
+|- testfw_run_all en mode FORKP (avec les options)      |+++         |9          |
+|- testfw_run_all en mode NOFORK (avec les options)     |+++         |8          |
 
 
 </p>
