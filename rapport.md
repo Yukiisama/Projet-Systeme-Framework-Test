@@ -77,27 +77,29 @@ Ces redirections se font a l'aide des appels système ```dup2```et la sauvegarde
 
 Le mode séquentiel de ```testfw_run_all``` se contente d'appeler la fonction ```launch_suite_test``` avec comme indice de debut 0 et comme indice de fin ```nbTest```afin de lancer tout les tests ajouté dans la structure
 
-Le problème que nous avons rencontré dans cette partie était lié à la redirection sur la commande externe. A l'origine, avant de résoudre notre problème la redirection sur commande empéchait CTest connaitre l'éxécution des tests mettant tout d'office a ```[FAILURE]``` avec comme message ```Failed  Required regular expression not found.Regex```.
+Le principal problème que nous avons rencontré dans cette partie était lié à la redirection sur la commande externe. A l'origine, avant de résoudre notre problème la redirection sur commande empéchait CTest connaitre l'éxécution des tests mettant tout d'office a ```[FAILURE]``` avec comme message ```Failed  Required regular expression not found.Regex```.
 Il s'agissait d'un problème de compréhension du sujet, donc pour le résoudre nous avons demander des précisions à des camarades et à des professeurs.
 
 # BONUS : 
 
-La première question du bonus était de faire le tourner les tests en parallèles. Pour cela nous avons juste rajouter a notre fonction ```testfw_run_all``` le cas où le parallèle était demandé (```FORKP```). Ce cas engendre autant de fork qu'il y à de tests, chaque processus fils effectue donc un test, il suffit donc d'appeler une fois notre fonction.
+La première question du bonus était de faire le tourner les tests en parallèles. Pour cela nous avons juste rajouter a notre fonction ```testfw_run_all``` le cas où le parallèle était demandé (```FORKP```). Ce cas engendre autant de fork qu'il y à de tests, chaque processus fils effectue donc un test, il suffit donc à chaque tour de boucle (allant de ```0``` a ```nbTest```) de faire un ```fork``` puis d'appeler une fois notre fonction ```launch_suite_test``` dans le processus crée avec comme valeur de début de séquence la valeur de notre boucle, et celle de fin la valeur suivante.
+
+La seconde question du bonus était de faire un mode ou aucun ```fork```n'était fait (mode ```NOFORK```) ;  Le mode ```NOFORK``` que nous avons implementé exécute les tests enregistrés jusqu'au premier échec. Il n'utilise aucun ```fork``` et utilise les mécanismes ```sigaction``` pour masquer les signaux importants ainsi que ```siglongjump``` et ```sigsetjump``` pour contourner les ```segfaults```, ```alarms``` etc... qui auraient tué notre programme. Nous avons compris du sujet que le mode devait s'arrêter au premier échec comme préciser dans le fichier Readme.md : ```In the nofork mode [...] the first test that fails will interrupt all the following```
 
 
-|FONCTIONNALITÉS  |DIFFICULTÉ  |SCORE (/10)|
-|:--|:--|:--:|
-|**Partie A :**   |  |    |
-|- struct testfw_t|+|10|
-|- testfw_init / tesfw_free / testfw_get / testfw_length|+|10|
-|- testfw_register_func|+|10|
-|- testfw_register_symb|++|10|
-|- testfw_register_suite|++|10|
-|**Partie B :**|||
-|- testfw_run_all en mode FORKS (sans les options)|++|10|
-|- option timeout|++|10|
-|- option redirection vers logfile|++|10|
-|- option redirection vers commande externe|+++|10|
-|**Bonus :**|||
-|- testfw_run_all en mode FORKP (avec les options)|+++|10|
-|- testfw_run_all en mode NOFORK (avec les options)|+++|10|
+|FONCTIONNALITÉS                                        |DIFFICULTÉ  |SCORE (/10)|
+|:------------------------------------------------------|:-----------|:---------:|
+|**Partie A :**                                         |            |           |
+|- struct testfw_t                                      |+           |10         |
+|- testfw_init / tesfw_free / testfw_get / testfw_length|+           |10         |
+|- testfw_register_func                                 |+           |10         |
+|- testfw_register_symb                                 |++          |10         |
+|- testfw_register_suite                                |++          |10         |
+|**Partie B :**                                         |            |           |
+|- testfw_run_all en mode FORKS (sans les options)      |++          |10         |
+|- option timeout                                       |++          |10         |
+|- option redirection vers logfile                      |++          |10         |
+|- option redirection vers commande externe             |+++         |10         |
+|**Bonus :**                                            |            |           |
+|- testfw_run_all en mode FORKP (avec les options)      |+++         |10         |
+|- testfw_run_all en mode NOFORK (avec les options)     |+++         |10         |
