@@ -1,7 +1,7 @@
 ## BROCARD Thimotée GERARDIN Xavier PERIGNON Alexis
 
 # Présentation du Projet
-<div style='text-align: justify;'>
+<p style ="text-align:justify">
 Le but de ce projet est de développer un framework de tests à partir de nos compétences en programmation système.
 Le langage utilisé est donc le C.
 
@@ -77,14 +77,14 @@ La partie B traite de l’exécution des tests enregistrés avec les fonctions p
 Par soucis de lisibilité du code nous avons découpé la fonction qui lance tout les tests en 4 fonctions.\
 ```redirect_logfile``` qui va s'occuper de mettre en place la redirection dans le fichier voulu (c'est à dire dans le cas où le champ ```logfile``` de notre structure est initialisé).
 
-```redirect_cmd```qui va s'occuper de la redirection dans la commande voulu, cette fonction effectue une sauvegarde des sorties standard (```STDOUT``` et ```STDERR```) afin de pouvoir les récupérer une fois la redirection terminée.
-Ces redirections se font a l'aide des appels système ```dup2```et la sauvegarde avec ```dup```.
+```redirect_cmd``` qui va s'occuper de la redirection dans la commande voulu, cette fonction effectue une sauvegarde des sorties standard (```STDOUT``` et ```STDERR```) afin de pouvoir les récupérer une fois la redirection terminée.
+Ces redirections se font a l'aide des appels système ```dup2``` et la sauvegarde avec ```dup```.
 
-```launch_test```qui va lancer le test en accédant à la case de ```tests``` correspondant à l'indice passé en paramètre, en outre il prend en paramètre ```argc``` et ```argv``` qui correspondent aux nombre d'argument et au tableau d'argument de la fonction à tester (à ne pas confondre avec ```argc``` et ```argv``` du ```main```, cette fonction setup également le ```timeout```pour la fonction qui va être lancer.
+```launch_test``` qui va lancer le test en accédant à la case de ```tests``` correspondant à l'indice passé en paramètre, en outre il prend en paramètre ```argc``` et ```argv``` qui correspondent aux nombre d'argument et au tableau d'argument de la fonction à tester (à ne pas confondre avec ```argc``` et ```argv``` du ```main```, cette fonction setup également le ```timeout``` pour la fonction qui va être lancer.
 
-```launch_suite_test```qui est la fonctions qui s'occupe de lancer une "séquence" de tests, elle prend en paramètre ```argc```, ```argv```, ```start``` et ```end```, ces deux derniers correspondent aux indices du premier et du dernier test de la séquence à lancer. Cette fonction est surtout utile pour le mode FORKP qui va lancer les tests en parallele. Cette fonction commence par effectuer un ```sigaction``` qui va traiter le signal d'alarme du timeout, ensuite on vérifie si une redirection vers le logfile est demandée. Dans la boucle principale on lance les tests de allant de l'indice ```start``` a ```end``` à l'aide de la fonction précédente et nous recupérrons le temps d'éxecution a l'aide d'appels des fonctions ```gettimeofday``` avant et après le test. On récupère le signal de fin et le code retour qui vont nous indiqué si le test à réussi ou non, nous donnant également plus de précision (```TIMEOUT```, ```KILLED```, ```SUCCESS``` etc...), on affiche ensuite les résultats des tests sous la forme suivante ```[TermState] run test "suite.name" in time ms``` avec. Cette fonction renvoie le nombre de tests loupé dans la séquence lancée.
+```launch_suite_test``` qui est la fonctions qui s'occupe de lancer une "séquence" de tests, elle prend en paramètre ```argc```, ```argv```, ```start``` et ```end```, ces deux derniers correspondent aux indices du premier et du dernier test de la séquence à lancer. Cette fonction est surtout utile pour le mode FORKP qui va lancer les tests en parallele. Cette fonction commence par effectuer un ```sigaction``` qui va traiter le signal d'alarme du timeout, ensuite on vérifie si une redirection vers le logfile est demandée. Dans la boucle principale on lance les tests de allant de l'indice ```start``` a ```end``` à l'aide de la fonction précédente et nous recupérrons le temps d'éxecution a l'aide d'appels des fonctions ```gettimeofday``` avant et après le test. On récupère le signal de fin et le code retour qui vont nous indiqué si le test à réussi ou non, nous donnant également plus de précision (```TIMEOUT```, ```KILLED```, ```SUCCESS``` etc...), on affiche ensuite les résultats des tests sous la forme suivante ```[TermState] run test "suite.name" in time ms``` avec. Cette fonction renvoie le nombre de tests loupé dans la séquence lancée.
 
-Le mode séquentiel de ```testfw_run_all``` se contente d'appeler la fonction ```launch_suite_test``` avec comme indice de debut 0 et comme indice de fin ```nbTest```afin de lancer tout les tests ajouté dans la structure.
+Le mode séquentiel de ```testfw_run_all``` se contente d'appeler la fonction ```launch_suite_test``` avec comme indice de debut 0 et comme indice de fin ```nbTest``` afin de lancer tout les tests ajouté dans la structure.
 
 Le principal problème que nous avons rencontré dans cette partie était lié à la redirection sur la commande externe. A l'origine, avant de résoudre notre problème la redirection sur commande empéchait CTest connaitre l'éxécution des tests mettant tout d'office a ```[FAILURE]``` avec comme message ```Failed  Required regular expression not found.Regex```.
 Il s'agissait d'un problème de compréhension du sujet, donc pour le résoudre nous avons demander des précisions à des camarades et à des professeurs.
@@ -93,7 +93,7 @@ Il s'agissait d'un problème de compréhension du sujet, donc pour le résoudre 
 
 La première question du bonus était de faire le tourner les tests en parallèles. Pour cela nous avons juste rajouter a notre fonction ```testfw_run_all``` le cas où le parallèle était demandé (```FORKP```). Ce cas engendre autant de fork qu'il y à de tests, chaque processus fils effectue donc un test, il suffit donc à chaque tour de boucle (allant de ```0``` a ```nbTest```) de faire un ```fork``` puis d'appeler une fois notre fonction ```launch_suite_test``` dans le processus crée avec comme valeur de début de séquence la valeur de notre boucle, et celle de fin la valeur suivante.
 
-La seconde question du bonus était de faire un mode ou aucun ```fork```n'était fait (mode ```NOFORK```) ;  Le mode ```NOFORK``` que nous avons implementé exécute les tests enregistrés jusqu'au premier échec. Il n'utilise aucun ```fork``` et utilise les mécanismes ```sigaction``` pour masquer les signaux importants ainsi que ```siglongjump``` et ```sigsetjump``` pour contourner les ```segfaults```, ```alarms``` etc... qui auraient tué notre programme. Nous avons compris du sujet que le mode devait s'arrêter au premier échec comme préciser dans le fichier Readme.md : ```In the nofork mode [...] the first test that fails will interrupt all the following```
+La seconde question du bonus était de faire un mode ou aucun ```fork``` n'était fait (mode ```NOFORK```) ;  Le mode ```NOFORK``` que nous avons implementé exécute les tests enregistrés jusqu'au premier échec. Il n'utilise aucun ```fork``` et utilise les mécanismes ```sigaction``` pour masquer les signaux importants ainsi que ```siglongjump``` et ```sigsetjump``` pour contourner les ```segfaults```, ```alarms``` etc... qui auraient tué notre programme. Nous avons compris du sujet que le mode devait s'arrêter au premier échec comme préciser dans le fichier Readme.md : ```In the nofork mode [...] the first test that fails will interrupt all the following```
 
 <div style="page-break-after: always;"></div>
 
@@ -119,5 +119,5 @@ La seconde question du bonus était de faire un mode ou aucun ```fork```n'était
 |- testfw_run_all en mode NOFORK (avec les options)     |+++         |10         |
 
 
-</div>
+</p>
 
