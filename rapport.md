@@ -4,10 +4,10 @@
 Le but de ce projet est de développer un framework de tests à partir de nos compétences en programmation système.
 Le langage utilisé est donc le C.
 
-Le projet est découpé en deux parties.
+Le projet est découpé en deux parties et un bonus.
 La première partie (Partie A) consiste à l'implémentation de la structure qui contiendra nos tests ainsi que diverses options, les fonctions d'initialisation/allocation et de libération de la structure et les fonctions d'ajouts de tests.
 La deuxième partie (Partie B) consiste elle à l'implémentation de la fonction permettant de lancer l’exécution de tous les tests enregistrés dans la structure.
-
+Le bonus nous demandant des modifications de la partie B pour executer les tests en parallèle ou sans aucun ```fork```.
 
 # Partie A : ajout des tests
 
@@ -73,4 +73,26 @@ Par soucis de lisibilité du code nous avons découpé la fonction qui lance tou
 ```redirect_cmd```qui va s'occuper de la redirection dans la commande voulu, cette fonction effectue une sauvegarde des sorties standard (```STDOUT``` et ```STDERR```) afin de pouvoir les récupérer une fois la redirection terminée.
 Ces redirections se font a l'aide des appels système ```dup2```et la sauvegarde avec ```dup```.\
 ```launch_test```qui va lancer le test en accédant à la case de ```tests``` correspondant à l'indice passé en paramètre, en outre il prend en paramètre ```argc``` et ```argv``` qui correspondent aux nombre d'argument et au tableau d'argument de la fonction à tester (à ne pas confondre avec ```argc``` et ```argv``` du ```main```, cette fonction setup également le ```timeout```pour la fonction qui va être lancer.\
-```launch_suite_test```qui est la fonctions qui s'occupe de lancer une "séquence" de tests, elle prend en paramètre ```argc```, ```argv```, ```start``` et ```end```, ces deux derniers correspondent aux indices du premier et du dernier test de la séquence à lancer. Cette fonction est surtout utile pour le mode FORKP qui va lancer les tests en parallele. Cette fonction commence par effectuer un ```sigaction``` qui va traiter le signal d'alarme du timeout, ensuite on vérifie si une redirection vers le logfile est demandée. Dans la boucle principale on lance les tests de allant de l'indice ```start``` a ```end```et nous recupérrons le temps d'éxecution a l'aide d'appels des fonctions ```gettimeofday``` avant et après le test. On récupère le signal de fin et le code retour qui vont nous indiqué si le test à réussi ou non, nous donnant également plus de précision (```TIMEOUT```, ```KILLED```, ```SUCCESS``` etc...).
+```launch_suite_test```qui est la fonctions qui s'occupe de lancer une "séquence" de tests, elle prend en paramètre ```argc```, ```argv```, ```start``` et ```end```, ces deux derniers correspondent aux indices du premier et du dernier test de la séquence à lancer. Cette fonction est surtout utile pour le mode FORKP qui va lancer les tests en parallele. Cette fonction commence par effectuer un ```sigaction``` qui va traiter le signal d'alarme du timeout, ensuite on vérifie si une redirection vers le logfile est demandée. Dans la boucle principale on lance les tests de allant de l'indice ```start``` a ```end```et nous recupérrons le temps d'éxecution a l'aide d'appels des fonctions ```gettimeofday``` avant et après le test. On récupère le signal de fin et le code retour qui vont nous indiqué si le test à réussi ou non, nous donnant également plus de précision (```TIMEOUT```, ```KILLED```, ```SUCCESS``` etc...), on affiche ensuite les résultats des tests sous la forme suivante ```[TermState] run test "suite.name" in time ms.```
+
+
+
+
+
+
+|FONCTIONNALITÉS  |DIFFICULTÉ  |SCORE (/10)|
+|:--|:--|:--:|
+|**Partie A :**   |  |    |
+|- struct testfw_t|+|10|
+|- testfw_init / tesfw_free / testfw_get / testfw_length|+|10|
+|- testfw_register_func|+|10|
+|- testfw_register_symb|++|10|
+|- testfw_register_suite|++|10|
+|**Partie B :**|||
+|- testfw_run_all en mode FORKS (sans les options)|++|10|
+|- option timeout|++|10|
+|- option redirection vers logfile|++|10|
+|- option redirection vers commande externe|+++|10|
+|**Bonus :**|||
+|- testfw_run_all en mode FORKP (avec les options)|+++|10|
+|- testfw_run_all en mode NOFORK (avec les options)|+++|10|
