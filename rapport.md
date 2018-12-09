@@ -79,9 +79,7 @@ Le mode séquentiel de ```testfw_run_all``` se contente d'appeler la fonction ``
 
 Le problème que nous avons rencontré dans cette partie était lié à la redirection sur la commande externe. Il s'agissait d'un problème de compréhension du sujet. A l'origine, avant de résoudre notre problème la redirection sur commande empéchait CTest connaitre l'éxécution des tests mettant tout d'office a ```[FAILURE]``` avec comme message ```Failed  Required regular expression not found.Regex```
 
-#BONUS : 
-
-
+# BONUS : 
 
 
 
